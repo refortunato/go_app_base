@@ -1,0 +1,19 @@
+ARG GO_VERSION=1.25.5
+FROM golang:${GO_VERSION}-alpine3.23
+
+WORKDIR /app
+
+# Instala Air (cacheable, não muda frequentemente)
+RUN go install github.com/air-verse/air@latest
+
+# Copia apenas arquivos de dependências (camada cacheable)
+COPY go.mod go.sum ./
+
+# Download das dependências (cacheable até go.mod/go.sum mudarem)
+RUN go mod download
+
+EXPOSE 8080
+
+# Air passa argumentos após -- para a aplicação
+# Padrão: api
+CMD [ "air", "-c", ".air.toml", "--", "api" ]

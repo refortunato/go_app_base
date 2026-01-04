@@ -1,0 +1,145 @@
+version: '3'
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  go-mod-cache:
+  go-build-cache:
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: go_app_base_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: go_app_base
+    ports:
+      - 3316:3306
+    networks:
+      - app_network
+
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        GO_VERSION: 1.25.5
+    container_name: go_app_base_dev
+    restart: always
+    platform: linux/amd64
+    depends_on:
+      - mysql
+    ports:
+      - 8081:8080
+    volumes:
+      - ./:/app
+      # Cache do Go modules (acelera downloads)
+      - go-mod-cache:/go/pkg/mod
+      # Cache do Go build (acelera compilações)
+      - go-build-cache:/root/.cache/go-build
+    networks:
+      - app_network
+
+  # Simula pod API do Kubernetes
+  app-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GO_VERSION: 1.25.5
+    container_name: go_app_base_api
+    restart: always
+    platform: linux/amd64
+    depends_on:
+      - mysql
+    ports:
+      - 8081:8080
+    command: ["./server", "api"]
+    environment:
+      SERVER_APP_DB_USER: root
+      SERVER_APP_DB_PASSWORD: root
+      SERVER_APP_DB_NAME: go_app_base
+      SERVER_APP_DB_HOST: mysql
+      SERVER_APP_DB_PORT: 3306
+      SERVER_APP_DB_DRIVER: mysql
+      SERVER_APP_WEB_SERVER_PORT: 8080
+    networks:
+      - app_network
+
+  # Simula pod consumidor Kafka do Kubernetes
+  app-kafka-consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GO_VERSION: 1.25.5
+    container_name: go_app_base_kafka
+    restart: always
+    platform: linux/amd64
+    depends_on:
+      - mysql
+    command: ["./server", "kafka"]
+    environment:
+      SERVER_APP_DB_USER: root
+      SERVER_APP_DB_PASSWORD: root
+      SERVER_APP_DB_NAME: go_app_base
+      SERVER_APP_DB_HOST: mysql
+      SERVER_APP_DB_PORT: 3306
+      SERVER_APP_DB_DRIVER: mysql
+    networks:
+      - app_network
+    profiles:
+      - kafka
+
+  # Simula pod consumidor RabbitMQ do Kubernetes
+  app-rabbitmq-consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GO_VERSION: 1.25.5
+    container_name: go_app_base_rabbitmq
+    restart: always
+    platform: linux/amd64
+    depends_on:
+      - mysql
+    command: ["./server", "rabbitmq"]
+    environment:
+      SERVER_APP_DB_USER: root
+      SERVER_APP_DB_PASSWORD: root
+      SERVER_APP_DB_NAME: go_app_base
+      SERVER_APP_DB_HOST: mysql
+      SERVER_APP_DB_PORT: 3306
+      SERVER_APP_DB_DRIVER: mysql
+    networks:
+      - app_network
+    profiles:
+      - rabbitmq
+
+  # Simula pod gRPC do Kubernetes
+  app-grpc-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GO_VERSION: 1.25.5
+    container_name: go_app_base_grpc
+    restart: always
+    platform: linux/amd64
+    depends_on:
+      - mysql
+    command: ["./server", "grpc"]
+    environment:
+      SERVER_APP_DB_USER: root
+      SERVER_APP_DB_PASSWORD: root
+      SERVER_APP_DB_NAME: go_app_base
+      SERVER_APP_DB_HOST: mysql
+      SERVER_APP_DB_PORT: 3306
+      SERVER_APP_DB_DRIVER: mysql
+    networks:
+      - app_network
+    profiles:
+      - grpc

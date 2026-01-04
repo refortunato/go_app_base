@@ -1,0 +1,17 @@
+# Diretórios de dados do Docker
+docker-local/
+tmp/
+
+# Binários compilados
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+cmd/server/server
+
+# Env files
+*.env
+
+# AI prompts directory
+AI_prompts/

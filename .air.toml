@@ -1,0 +1,17 @@
+[build]
+# Command to build the app (executed from project root)
+cmd = "cd cmd/server && GOOS=linux go build -o server main.go"
+# Binary to run (path from project root)
+bin = "cmd/server/server"
+# Working directory for the binary (so .env is found)
+# The binary will be executed from cmd/server directory
+full_bin = "sh -c 'cd cmd/server && ./server'"
+# Watch for changes in Go files
+include_ext = ["go"]
+# Ignore changes in the vendor folder
+exclude_dir = ["vendor", "tmp", "docker-local"]
+# Ensure the binary is executable
+run_after_build = "chmod +x cmd/server/server"
+
+[log]
+level = "debug"
