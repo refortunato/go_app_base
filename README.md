@@ -2,6 +2,33 @@
 
 Base project template for building Go microservices following Clean Architecture + DDD principles.
 
+## Using This Template
+
+### Creating a New Project
+
+To create a new project from this template:
+
+```sh
+./scripts/create-new-project.sh
+```
+
+Follow the interactive prompts to:
+- Define your application name
+- Configure the remote repository
+- Automatically update all project references
+
+### Removing Example Files
+
+Once your project is set up, remove the example files and code:
+
+```sh
+./scripts/remove-examples.sh
+```
+
+This will clean up example entities, use cases, repositories, and controllers.
+
+> **Important**: After using the scripts, you can safely delete the `./scripts` directory if you no longer need it.
+
 ## Project Structure
 
 This project follows Clean Architecture and Domain-Driven Design (DDD) patterns:
