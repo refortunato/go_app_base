@@ -10,16 +10,24 @@ volumes:
 
 services:
   mysql:
-    image: mysql:8.0
+    image: mysql:9.5.0
     container_name: go_app_base_mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: go_app_base
     ports:
-      - 3316:3306
+      - 3306:3306
+    volumes:
+      - ./docker-local/mysql_data:/var/lib/mysql
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   app-dev:
     build:

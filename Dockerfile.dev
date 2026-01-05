@@ -12,8 +12,18 @@ COPY go.mod go.sum ./
 # Download das dependências (cacheable até go.mod/go.sum mudarem)
 RUN go mod download
 
+# Install bash and netcat for the wait-for-mysql script
+RUN apk add --no-cache bash netcat-openbsd || true
+
+# Copy .docker scripts into image (will be overwritten by bind mount in development)
+COPY ./.docker /app/.docker
+RUN chmod +x /app/.docker/wait-for-mysql.sh || true
+
 EXPOSE 8080
 
-# Air passa argumentos após -- para a aplicação
-# Padrão: api
+# Entrypoint: wait for MySQL, then exec the CMD
+ENTRYPOINT ["/bin/sh", "-c", "/app/.docker/wait-for-mysql.sh mysql 3306 60; exec \"$@\"", "--"]
+
+# Air passes arguments after -- to the application
+# Default: api
 CMD [ "air", "-c", ".air.toml", "--", "api" ]
