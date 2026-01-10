@@ -18,6 +18,8 @@ func LoadConfig(path string) (*internalConf.Conf, error) {
 
 	cfg := &internalConf.Conf{
 		AppName:              getEnv("SERVER_APP_NAME", "go_app_base"),
+		ImageName:            getEnv("SERVER_APP_IMAGE_NAME", ""),
+		ImageVersion:         getEnv("SERVER_APP_IMAGE_VERSION", ""),
 		WebServerPort:        getEnv("SERVER_APP_WEB_SERVER_PORT", "8080"),
 		DBDriver:             getEnv("SERVER_APP_DB_DRIVER", "mysql"),
 		DBHost:               getEnv("SERVER_APP_DB_HOST", "localhost"),
@@ -32,9 +34,6 @@ func LoadConfig(path string) (*internalConf.Conf, error) {
 		DebugMode:            getEnvAsBool("SERVER_APP_DEBUG_MODE", false),
 	}
 
-	println("Configuration loaded:")
-	println("DBPort: ", cfg.DBPort)
-	println("DBHost: ", cfg.DBHost)
 	return cfg, nil
 }
 

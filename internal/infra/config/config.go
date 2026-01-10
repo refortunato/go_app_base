@@ -2,6 +2,8 @@ package config
 
 type Conf struct {
 	AppName              string `mapstructure:"SERVER_APP_NAME"`
+	ImageName            string `mapstructure:"SERVER_APP_IMAGE_NAME"`
+	ImageVersion         string `mapstructure:"SERVER_APP_IMAGE_VERSION"`
 	DBDriver             string `mapstructure:"SERVER_APP_DB_DRIVER"`
 	DBHost               string `mapstructure:"SERVER_APP_DB_HOST"`
 	DBPort               string `mapstructure:"SERVER_APP_DB_PORT"`
