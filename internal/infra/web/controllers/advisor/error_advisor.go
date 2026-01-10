@@ -3,8 +3,8 @@ package advisor
 import (
 	"net/http"
 
-	"github.com/refortunato/go_app_base/internal/infra/web/webcontext"
 	app_errors "github.com/refortunato/go_app_base/internal/shared/errors"
+	webcontext "github.com/refortunato/go_app_base/internal/shared/web/context"
 )
 
 func ReturnApplicationError(c webcontext.WebContext, err error) {

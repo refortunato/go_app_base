@@ -8,9 +8,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/refortunato/go_app_base/cmd/server/container"
 	"github.com/refortunato/go_app_base/configs"
-	"github.com/refortunato/go_app_base/internal/infra/dependencies"
-	"github.com/refortunato/go_app_base/internal/infra/web/webserver"
+	"github.com/refortunato/go_app_base/internal/infra/web/routes"
+	"github.com/refortunato/go_app_base/internal/shared/web/server"
 
 	// mysql
 	_ "github.com/go-sql-driver/mysql"
@@ -28,7 +29,9 @@ func main() {
 	}
 	defer db.Close()
 
-	if err := dependencies.InitDependencies(db, cfg); err != nil {
+	// Initialize dependency container
+	c, err := container.New(db, cfg)
+	if err != nil {
 		panic(err)
 	}
 
@@ -45,16 +48,16 @@ func main() {
 	// Canal para erros de inicialização
 	serverErr := make(chan error, 1)
 
-	var server webserver.Server
+	var srv server.Server
 
 	switch mode {
 	case "api":
 		fmt.Println("Starting API server...")
-		server = webserver.NewServer(cfg.WebServerPort)
+		srv = server.NewGinServerWithRoutes(cfg.WebServerPort, routes.RegisterRoutes(c))
 
 		// Inicia o servidor em uma goroutine
 		go func() {
-			if err := server.Start(); err != nil {
+			if err := srv.Start(); err != nil {
 				serverErr <- fmt.Errorf("API server error: %w", err)
 			}
 		}()
@@ -115,8 +118,8 @@ func main() {
 		defer cancel()
 
 		// Executa o shutdown gracioso
-		if server != nil {
-			if err := server.Shutdown(ctx); err != nil {
+		if srv != nil {
+			if err := srv.Shutdown(ctx); err != nil {
 				fmt.Printf("Error during shutdown: %v\n", err)
 				os.Exit(1)
 			}

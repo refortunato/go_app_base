@@ -5,8 +5,8 @@ import (
 
 	"github.com/refortunato/go_app_base/internal/core/application/usecases"
 	"github.com/refortunato/go_app_base/internal/infra/web/controllers/advisor"
-	"github.com/refortunato/go_app_base/internal/infra/web/webcontext"
 	"github.com/refortunato/go_app_base/internal/shared/logger"
+	webcontext "github.com/refortunato/go_app_base/internal/shared/web/context"
 )
 
 type ExampleController struct {

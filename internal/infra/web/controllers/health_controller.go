@@ -5,7 +5,7 @@ import (
 
 	"github.com/refortunato/go_app_base/internal/core/application/usecases"
 	"github.com/refortunato/go_app_base/internal/infra/web/controllers/advisor"
-	"github.com/refortunato/go_app_base/internal/infra/web/webcontext"
+	webcontext "github.com/refortunato/go_app_base/internal/shared/web/context"
 )
 
 type HealthController struct {
