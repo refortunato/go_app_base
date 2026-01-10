@@ -21,7 +21,11 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
 - `cmd/`
   - `cmd/server/`
     - Entry point of the application.
-    - `cmd/server/main.go` boots config, DB, dependency injection, and starts a runtime mode (api/kafka/rabbitmq/grpc).
+    - `cmd/server/main.go`: thin entry point that boots config, DB, creates container, and starts a runtime mode (api/kafka/rabbitmq/grpc).
+    - `cmd/server/container/`: **Composition Root** (dependency injection)
+      - `container.go`: wires all application dependencies (repositories, use cases, controllers).
+      - Returns a `Container` struct with all initialized dependencies.
+      - This is the **only place** where objects are composed together.
 - `configs/`
   - Application configuration and DB connection setup.
   - When adding new environment variables, ensure they are represented here.
@@ -37,16 +41,19 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
       - `entities/`: domain entities.
       - `services/`: domain services (created when a entity could not resolve some domain logic by itself or when a code/method is repeated among entities).
       - `valueobjects/`: value objects.
-  - `internal/infra/` (infrastructure layer)
-    - `dependencies/`: dependency injection composition root (singletons). See `internal/infra/dependencies/dependencies.go`.
+  - `internal/infra/` (infrastructure layer - adapters for domain needs)
     - `repositories/`: concrete repository implementations (e.g., MySQL).
     - `config/`: infrastructure configuration details.
     - `web/`: web delivery layer
-      - `controllers/`: HTTP controllers.
-      - `webserver/`: Gin bootstrap/router definitions (see `internal/infra/web/webserver/gin_handler.go`).
-      - `webcontext/`: request/response context adapters.
-- `internal/shared/`
-  - Shared utilities usable across multiple layers/modules (keep it small and truly generic).
+      - `controllers/`: HTTP controllers (receive container dependencies via constructor).
+      - `routes/`: route registration (`routes.go` receives container and returns route setup function).
+  - `internal/shared/` (generic reusable code, framework-agnostic)
+    - Shared utilities usable across multiple layers/modules (keep it small and truly generic).
+    - `logger/`: logger interface and implementation (slog).
+    - `errors/`: application error handling.
+    - `web/`: generic web infrastructure
+      - `context/`: `WebContext` interface (framework-agnostic) and `GinContextAdapter`.
+      - `server/`: `Server` interface, `GinServer` implementation, and factory with callback pattern.
 
 ## Coding conventions (Go + Clean Arch + DDD)
 
@@ -71,6 +78,7 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
   - domain types
   - repository interfaces in `internal/core/application/repositories`
   - application services (if needed)
+- Use cases are instantiated in `cmd/server/container/container.go`.
 
 ### Queries (read models)
 - Query handlers should live in `internal/core/application/query`.
@@ -78,8 +86,10 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
 
 ### Controllers and routing
 - Controllers live in `internal/infra/web/controllers`.
-- Routes and Gin wiring live in `internal/infra/web/webserver/gin_handler.go`.
-- Prefer REST conventions where possible (resources, proper verbs, status codes).
+- Controllers receive dependencies via constructor (from container).
+- Controllers use `WebContext` interface from `internal/shared/web/context` (not Gin directly).
+- Routes are registered in `internal/infra/web/routes/routes.go`.
+- `RegisterRoutes` function receives the container and returns a `RouteSetupFunc`.
 
 ### Repositories
 - Repository interfaces must be defined in `internal/core/application/repositories`.
@@ -88,15 +98,84 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
   - Have a DB model struct (what is stored in MySQL).
   - Provide explicit mapping helpers named like `mapToDomain...` and `mapToDB...`.
 
-### Dependency injection
-- Singleton composition and wiring live in `internal/infra/dependencies/dependencies.go`.
-- `cmd/server/main.go` must remain a thin entry point: load config, create DB, call dependency initialization, start the selected runtime mode.
+### Dependency injection (Composition Root)
+- **Container is in `cmd/server/container/container.go`** (Main Component in Clean Architecture).
+- Container is a struct that holds all application dependencies.
+- `container.New(db, cfg)` creates and wires all dependencies.
+- **No global singletons** - dependencies are passed via constructor or container.
+- `cmd/server/main.go` must remain thin: load config, create DB, create container, start server.
+
+### Server creation
+- Use factory pattern from `internal/shared/web/server/factory.go`.
+- `NewGinServerWithRoutes(port, setupRoutes)` accepts a callback function.
+- Example in main.go:
+  ```go
+  c := container.New(db, cfg)
+  srv := server.NewGinServerWithRoutes(
+      cfg.WebServerPort,
+      routes.RegisterRoutes(c),  // passes container to routes
+  )
+  srv.Start()
+  ```
 
 ### Environment variables
 - When a new environment variable is needed:
   - Add it to `cmd/server/.env` and `cmd/server/.env.example`.
   - Always use the prefix `SERVER_APP_...`.
   - Update configuration mapping in `configs/config.go`.
+
+## Architecture patterns and principles
+
+### Separation of concerns (shared vs infra)
+
+**`internal/shared/`**
+- Contains **generic, reusable, domain-agnostic** code.
+- Can be extracted to a separate library and used in multiple projects.
+- Must NOT depend on `infra/` or `core/` packages.
+- Examples: logger interface/implementation, web server abstractions, context adapters, error handling.
+
+**`internal/infra/`**
+- Contains **application-specific infrastructure adapters**.
+- Implements interfaces defined in `core/` (repositories) or `shared/` (if generic contracts exist).
+- Can depend on `shared/` and `core/`, but not vice versa.
+- Examples: MySQL repositories, application-specific controllers, route definitions.
+
+**Decision criteria:**
+- If code has knowledge of **domain entities or business rules** → `infra/`
+- If code is **technical and framework-agnostic** → `shared/`
+- If code is **business logic** → `core/`
+
+### Dependency Inversion Principle in action
+
+The factory pattern in `shared/web/server/factory.go` uses **callback functions** to invert dependencies:
+
+```go
+// shared/web/server/factory.go (generic)
+type RouteSetupFunc func(*gin.Engine)
+
+func NewGinServerWithRoutes(port string, setupRoutes RouteSetupFunc) *GinServer {
+    router := gin.Default()
+    if setupRoutes != nil {
+        setupRoutes(router)
+    }
+    return NewGinServer(router, port)
+}
+
+// infra/web/routes/routes.go (application-specific)
+func RegisterRoutes(c *container.Container) func(*gin.Engine) {
+    return func(router *gin.Engine) {
+        router.GET("/health", func(ctx *gin.Context) {
+            c.HealthController.HealthCheck(context.NewGinContextAdapter(ctx))
+        })
+    }
+}
+
+// cmd/server/main.go (composition)
+c := container.New(db, cfg)
+srv := server.NewGinServerWithRoutes(cfg.WebServerPort, routes.RegisterRoutes(c))
+```
+
+This ensures `shared/` doesn't know about `infra/`, respecting dependency direction.
 
 ## Runtime modes (Kubernetes-friendly)
 
