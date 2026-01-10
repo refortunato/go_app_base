@@ -9,9 +9,12 @@ tmp/
 *.so
 *.dylib
 cmd/server/server
+server
 
 # Env files
 *.env
 
 # AI prompts directory
 AI_prompts/
+
+
