@@ -23,8 +23,8 @@ echo -e "   - internal/infra/repositories/example_mysql_repository.go"
 echo -e "   - internal/infra/web/controllers/example_controller.go"
 echo ""
 echo -e "${YELLOW}   And the following files will be modified:${NC}"
-echo -e "   - internal/infra/dependencies/dependencies.go"
-echo -e "   - internal/infra/web/webserver/gin_handler.go"
+echo -e "   - cmd/server/container/container.go"
+echo -e "   - internal/infra/web/routes/routes.go"
 echo ""
 
 # Ask for confirmation
@@ -58,38 +58,38 @@ for file in "${files_to_remove[@]}"; do
 done
 
 echo ""
-echo -e "${BLUE}🔧 Updating dependencies.go...${NC}"
+echo -e "${BLUE}🔧 Updating container.go...${NC}"
 
-# Update dependencies.go
-deps_file="internal/infra/dependencies/dependencies.go"
-if [ -f "$deps_file" ]; then
+# Update container.go
+container_file="cmd/server/container/container.go"
+if [ -f "$container_file" ]; then
     # Create a temporary file without Example lines
-    grep -v "Example" "$deps_file" > "$deps_file.tmp"
-    mv "$deps_file.tmp" "$deps_file"
+    grep -v "Example" "$container_file" > "$container_file.tmp"
+    mv "$container_file.tmp" "$container_file"
     
     # Format the file
-    go fmt "$deps_file" > /dev/null 2>&1 || true
+    go fmt "$container_file" > /dev/null 2>&1 || true
     
-    echo -e "${GREEN}  ✓ Updated $deps_file${NC}"
+    echo -e "${GREEN}  ✓ Updated $container_file${NC}"
 else
-    echo -e "${RED}  ❌ File not found: $deps_file${NC}"
+    echo -e "${RED}  ❌ File not found: $container_file${NC}"
 fi
 
 echo ""
-echo -e "${BLUE}🔧 Updating gin_handler.go...${NC}"
+echo -e "${BLUE}🔧 Updating routes.go...${NC}"
 
-# Update gin_handler.go
-handler_file="internal/infra/web/webserver/gin_handler.go"
-if [ -f "$handler_file" ]; then
+# Update routes.go
+routes_file="internal/infra/web/routes/routes.go"
+if [ -f "$routes_file" ]; then
     # Remove the example route (the entire block with 3 lines)
-    sed -i.bak '/router.GET("\/examples\/:id"/,/})/d' "$handler_file" && rm "$handler_file.bak"
+    sed -i.bak '/router.GET("\/examples\/:id"/,/})/d' "$routes_file" && rm "$routes_file.bak"
     
     # Format the file
-    go fmt "$handler_file" > /dev/null 2>&1 || true
+    go fmt "$routes_file" > /dev/null 2>&1 || true
     
-    echo -e "${GREEN}  ✓ Updated $handler_file${NC}"
+    echo -e "${GREEN}  ✓ Updated $routes_file${NC}"
 else
-    echo -e "${RED}  ❌ File not found: $handler_file${NC}"
+    echo -e "${RED}  ❌ File not found: $routes_file${NC}"
 fi
 
 echo ""
