@@ -1,7 +1,7 @@
 package usecases
 
 import (
-	"github.com/refortunato/go_app_base/internal/core/application/repositories"
+	"github.com/refortunato/go_app_base/internal/health/core/application/repositories"
 )
 
 type HealthCheckOutputDTO struct {

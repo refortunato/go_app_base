@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"github.com/refortunato/go_app_base/internal/core/domain/entities"
+	"github.com/refortunato/go_app_base/internal/example/core/domain/entities"
 )
 
 type ExampleRepository interface {

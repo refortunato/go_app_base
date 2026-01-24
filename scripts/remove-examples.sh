@@ -16,15 +16,16 @@ echo ""
 
 echo -e "${YELLOW}⚠️  This will remove all example files from the project.${NC}"
 echo -e "${YELLOW}   The following files will be deleted:${NC}"
-echo -e "   - internal/core/application/repositories/example_repository.go"
-echo -e "   - internal/core/application/usecases/get_example.go"
-echo -e "   - internal/core/domain/entities/example.go"
-echo -e "   - internal/infra/repositories/example_mysql_repository.go"
-echo -e "   - internal/infra/web/controllers/example_controller.go"
+echo -e "   - internal/example/core/application/repositories/example_repository.go"
+echo -e "   - internal/example/core/application/usecases/get_example.go"
+echo -e "   - internal/example/core/domain/entities/example.go"
+echo -e "   - internal/example/infra/repositories/example_mysql_repository.go"
+echo -e "   - internal/example/infra/web/controllers/example_controller.go"
+echo -e "   - internal/example/ (entire directory)"
 echo ""
 echo -e "${YELLOW}   And the following files will be modified:${NC}"
 echo -e "   - cmd/server/container/container.go"
-echo -e "   - internal/infra/web/routes/routes.go"
+echo -e "   - internal/infra/web/register_routes.go"
 echo ""
 
 # Ask for confirmation
@@ -39,23 +40,13 @@ fi
 echo ""
 echo -e "${BLUE}🗑️  Removing example files...${NC}"
 
-# Remove example files
-files_to_remove=(
-    "internal/core/application/repositories/example_repository.go"
-    "internal/core/application/usecases/get_example.go"
-    "internal/core/domain/entities/example.go"
-    "internal/infra/repositories/example_mysql_repository.go"
-    "internal/infra/web/controllers/example_controller.go"
-)
-
-for file in "${files_to_remove[@]}"; do
-    if [ -f "$file" ]; then
-        rm "$file"
-        echo -e "${GREEN}  ✓ Removed $file${NC}"
-    else
-        echo -e "${YELLOW}  ⚠ File not found: $file${NC}"
-    fi
-done
+# Remove entire example module directory
+if [ -d "internal/example" ]; then
+    rm -rf "internal/example"
+    echo -e "${GREEN}  ✓ Removed internal/example/${NC}"
+else
+    echo -e "${YELLOW}  ⚠ Directory not found: internal/example${NC}"
+fi
 
 echo ""
 echo -e "${BLUE}🔧 Updating container.go...${NC}"
@@ -76,13 +67,13 @@ else
 fi
 
 echo ""
-echo -e "${BLUE}🔧 Updating routes.go...${NC}"
+echo -e "${BLUE}🔧 Updating register_routes.go...${NC}"
 
-# Update routes.go
-routes_file="internal/infra/web/routes/routes.go"
+# Update register_routes.go
+routes_file="internal/infra/web/register_routes.go"
 if [ -f "$routes_file" ]; then
-    # Remove the example route (the entire block with 3 lines)
-    sed -i.bak '/router.GET("\/examples\/:id"/,/})/d' "$routes_file" && rm "$routes_file.bak"
+    # Remove the example route registration line
+    sed -i.bak '/exampleWeb.RegisterRoutes/d' "$routes_file" && rm "$routes_file.bak"
     
     # Format the file
     go fmt "$routes_file" > /dev/null 2>&1 || true

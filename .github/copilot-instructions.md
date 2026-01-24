@@ -23,37 +23,48 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
     - Entry point of the application.
     - `cmd/server/main.go`: thin entry point that boots config, DB, creates container, and starts a runtime mode (api/kafka/rabbitmq/grpc).
     - `cmd/server/container/`: **Composition Root** (dependency injection)
-      - `container.go`: wires all application dependencies (repositories, use cases, controllers).
-      - Returns a `Container` struct with all initialized dependencies.
-      - This is the **only place** where objects are composed together.
+      - `container.go`: orchestrates module initialization by calling each module's factory.
+      - Returns a `Container` struct with all initialized modules.
+      - Does NOT wire individual dependencies - delegates to module factories.
 - `configs/`
-  - Application configuration and DB connection setup.
+  - Application configuration (`Conf` struct) and DB connection setup.
   - When adding new environment variables, ensure they are represented here.
+  - `config.go`: defines `Conf` struct and `LoadConfig()` function.
+  - `db_connection.go`: MySQL connection setup.
 - `internal/`
   - Application code not intended for external import.
-  - `internal/core/` (application + domain layers)
-    - `internal/core/application/` (use cases, application services)
-      - `usecases/`: orchestrates business flows.
-      - `services/`: application-level services (orchestration, cross-aggregate coordination).
-      - `query/`: read/query handlers and DTOs (CQRS-style queries).
-      - `repositories/`: repository interfaces used by use cases/queries.
-    - `internal/core/domain/` (pure domain)
-      - `entities/`: domain entities.
-      - `services/`: domain services (created when a entity could not resolve some domain logic by itself or when a code/method is repeated among entities).
-      - `valueobjects/`: value objects.
-  - `internal/infra/` (infrastructure layer - adapters for domain needs)
-    - `repositories/`: concrete repository implementations (e.g., MySQL).
-    - `config/`: infrastructure configuration details.
-    - `web/`: web delivery layer
-      - `controllers/`: HTTP controllers (receive container dependencies via constructor).
-      - `routes/`: route registration (`routes.go` receives container and returns route setup function).
+  - **Each directory within `internal/` represents a DDD module/bounded context** (e.g., `example/`, `health/`).
+  - Each module is **completely independent** and self-contained with its own `core/` and `infra/` layers.
+  - **Module structure** (e.g., `internal/example/`):
+    - `core/` (application + domain layers)
+      - `core/application/` (use cases, application services)
+        - `usecases/`: orchestrates business flows. Each use case has its own file.
+        - `services/`: application-level services (orchestration, cross-aggregate coordination).
+        - `query/`: read/query handlers and DTOs (CQRS-style queries).
+        - `repositories/`: repository interfaces used by use cases/queries.
+      - `core/domain/` (pure domain)
+        - `entities/`: domain entities. Each entity has its own file.
+        - `services/`: domain services (when entity can't resolve logic or logic is repeated).
+        - `valueobjects/`: value objects. Each value object has its own file.
+    - `infra/` (infrastructure layer - adapters for domain needs)
+      - `module.go`: **Module Factory** - wires all module dependencies (repos, use cases, controllers).
+      - `repositories/`: concrete repository implementations (e.g., MySQL).
+      - `web/`: web delivery layer
+        - `controllers/`: HTTP controllers (receive dependencies via constructor).
+        - `routes.go`: module-specific route registration (exports `RegisterRoutes(router, controller)`).
+        - `routes.go`: module-specific route registration.
+      - `module.go`: module factory that wires all dependencies (repositories, use cases, controllers).
   - `internal/shared/` (generic reusable code, framework-agnostic)
-    - Shared utilities usable across multiple layers/modules (keep it small and truly generic).
+    - Shared utilities usable across multiple modules (keep it small and truly generic).
     - `logger/`: logger interface and implementation (slog).
     - `errors/`: application error handling.
     - `web/`: generic web infrastructure
       - `context/`: `WebContext` interface (framework-agnostic) and `GinContextAdapter`.
       - `server/`: `Server` interface, `GinServer` implementation, and factory with callback pattern.
+      - `advisor/`: HTTP error response helpers (generic, framework-agnostic).
+  - `internal/infra/` (shared infrastructure - cross-module)
+    - `web/`: shared web components
+      - `register_routes.go`: main route orchestrator (delegates to each module).
 
 ## Coding conventions (Go + Clean Arch + DDD)
 
@@ -66,8 +77,8 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
   - Package names: short, lowercase.
 
 ### Domain rules
-- If a struct has an **ID** and represents a business concept lifecycle, treat it as a **Domain Entity** and place it under `internal/core/domain/entities`.
-- Use **Value Objects** for validated, immutable concepts under `internal/core/domain/valueobjects`.
+- If a struct has an **ID** and represents a business concept lifecycle, treat it as a **Domain Entity** and place it under `internal/{module}/core/domain/entities`.
+- Use **Value Objects** for validated, immutable concepts under `internal/{module}/core/domain/valueobjects`.
 
 ### Use cases
 - Every use case must expose a public method named `Execute`.
@@ -75,33 +86,36 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
   - `Execute(input InputDto) (OutputDto, error)`
   - Keep DTOs in the use case package (or a dedicated `dto` subpackage) and keep them flat.
 - Use cases must depend only on:
-  - domain types
-  - repository interfaces in `internal/core/application/repositories`
+  - domain types from the same module
+  - repository interfaces in `internal/{module}/core/application/repositories`
   - application services (if needed)
 - Use cases are instantiated in `cmd/server/container/container.go`.
 
 ### Queries (read models)
-- Query handlers should live in `internal/core/application/query`.
+- Query handlers should live in `internal/{module}/core/application/query`.
 - Prefer returning query DTOs (read models) rather than domain entities when appropriate.
 
 ### Controllers and routing
-- Controllers live in `internal/infra/web/controllers`.
+- Controllers live in `internal/{module}/infra/web/controllers`.
 - Controllers receive dependencies via constructor (from container).
 - Controllers use `WebContext` interface from `internal/shared/web/context` (not Gin directly).
-- Routes are registered in `internal/infra/web/routes/routes.go`.
-- `RegisterRoutes` function receives the container and returns a `RouteSetupFunc`.
+- **Each module registers its own routes** in `internal/{module}/infra/web/routes.go`.
+- Each module exports a `RegisterRoutes(router *gin.Engine, controller)` function.
+- The central orchestrator in `internal/infra/web/register_routes.go` calls each module's registration function.
+- This keeps modules independent and prepares them for potential extraction into microservices.
 
 ### Repositories
-- Repository interfaces must be defined in `internal/core/application/repositories`.
-- Implementations must be in `internal/infra/repositories`.
+- Repository interfaces must be defined in `internal/{module}/core/application/repositories`.
+- Implementations must be in `internal/{module}/infra/repositories`.
 - Inside each repository implementation:
   - Have a DB model struct (what is stored in MySQL).
   - Provide explicit mapping helpers named like `mapToDomain...` and `mapToDB...`.
 
 ### Dependency injection (Composition Root)
 - **Container is in `cmd/server/container/container.go`** (Main Component in Clean Architecture).
-- Container is a struct that holds all application dependencies.
-- `container.New(db, cfg)` creates and wires all dependencies.
+- Container is a struct that holds references to all initialized modules.
+- **Each module wires its own dependencies** via `NewModuleXYZ()` factory in `internal/{module}/infra/module.go`.
+- `container.New(db, cfg)` creates the logger and initializes all modules.
 - **No global singletons** - dependencies are passed via constructor or container.
 - `cmd/server/main.go` must remain thin: load config, create DB, create container, start server.
 
@@ -113,7 +127,7 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
   c := container.New(db, cfg)
   srv := server.NewGinServerWithRoutes(
       cfg.WebServerPort,
-      routes.RegisterRoutes(c),  // passes container to routes
+      infraWeb.RegisterRoutes(c),  // passes container to route orchestrator
   )
   srv.Start()
   ```
@@ -132,13 +146,13 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
 - Contains **generic, reusable, domain-agnostic** code.
 - Can be extracted to a separate library and used in multiple projects.
 - Must NOT depend on `infra/` or `core/` packages.
-- Examples: logger interface/implementation, web server abstractions, context adapters, error handling.
+- Examples: logger interface/implementation, web server abstractions, context adapters, error handling, HTTP response advisors.
 
 **`internal/infra/`**
 - Contains **application-specific infrastructure adapters**.
 - Implements interfaces defined in `core/` (repositories) or `shared/` (if generic contracts exist).
 - Can depend on `shared/` and `core/`, but not vice versa.
-- Examples: MySQL repositories, application-specific controllers, route definitions.
+- Examples: application-specific route definitions.
 
 **Decision criteria:**
 - If code has knowledge of **domain entities or business rules** → `infra/`
@@ -172,7 +186,7 @@ func RegisterRoutes(c *container.Container) func(*gin.Engine) {
 
 // cmd/server/main.go (composition)
 c := container.New(db, cfg)
-srv := server.NewGinServerWithRoutes(cfg.WebServerPort, routes.RegisterRoutes(c))
+srv := server.NewGinServerWithRoutes(cfg.WebServerPort, infraWeb.RegisterRoutes(c))
 ```
 
 This ensures `shared/` doesn't know about `infra/`, respecting dependency direction.
@@ -196,6 +210,149 @@ In Kubernetes, prefer overriding the container args, for example:
 Before making changes, the AI agent must:
 
 1. Present an action plan (bulleted steps) and a short list of files it intends to touch.
+2. **Wait for approval** before applying code changes.
+3. If the user approves and the plan remains the same, proceed without asking again for each step.
+4. If the plan changes materially (new files, new behavior, new architecture), present an updated plan and ask again.
+
+## Creating a new module (step-by-step)
+
+When creating a new module, follow this workflow to ensure proper bounded context isolation:
+
+### 1. Create module directory structure
+```bash
+internal/
+  └── {module_name}/
+      ├── core/
+      │   ├── application/
+      │   │   ├── repositories/
+      │   │   └── usecases/
+      │   └── domain/
+      │       ├── entities/
+      │       ├── services/      (optional)
+      │       └── valueobjects/  (optional)
+      └── infra/
+          ├── repositories/
+          └── web/
+              └── controllers/
+```
+
+### 2. Domain Layer (core/domain)
+- **Entities**: Create in `internal/{module}/core/domain/entities/{entity_name}.go`
+  - Include constructor `New{Entity}()` with validation
+  - Include restore function `Restore{Entity}()` for reconstitution from DB
+  - Keep private fields with public getters/setters
+  - Add `Validate()` method
+
+- **Value Objects** (optional): Create in `internal/{module}/core/domain/valueobjects/{vo_name}.go`
+  - Immutable structs with validation
+  - No identity, compared by value
+
+### 3. Application Layer (core/application)
+- **Repository Interfaces**: Create in `internal/{module}/core/application/repositories/{entity}_repository.go`
+  - Define contract: `Save`, `FindById`, `Update`, `Delete`, etc.
+  - Return domain entities, not DB models
+
+- **Use Cases**: Create in `internal/{module}/core/application/usecases/{action}_{entity}.go`
+  - Each use case = one file
+  - Define input/output DTOs in the same file
+  - Expose `Execute(input InputDTO) (OutputDTO, error)` method
+  - Depend only on repository interfaces and domain entities
+
+### 4. Infrastructure Layer (infra)
+- **Repositories**: Create in `internal/{module}/infra/repositories/{entity}_mysql_repository.go`
+  - Implement interface from `core/application/repositories`
+  - Define DB model struct (private)
+  - Provide `mapToDomain()` and `mapToDB()` functions
+
+- **Controllers**: Create in `internal/{module}/infra/web/controllers/{entity}_controller.go`
+  - Receive use cases via constructor
+  - Use `WebContext` interface (not Gin directly)
+  - Use `advisor` for error responses
+
+- **Routes**: Create in `internal/{module}/infra/web/routes.go`
+  ```go
+  package web
+  
+  func RegisterRoutes(router *gin.Engine, controller *controllers.XController) {
+      router.GET("/path/:id", func(ctx *gin.Context) {
+          controller.Method(context.NewGinContextAdapter(ctx))
+      })
+  }
+  ```
+
+### 5. Module Factory
+- Create `internal/{module}/infra/module.go`:
+```go
+package infra
+
+type {Module}Module struct {
+    {Entity}Controller *controllers.{Entity}Controller
+    {Action}UseCase    *usecases.{Action}UseCase
+    // Add more dependencies as needed
+}
+
+func New{Module}Module(db *sql.DB) *{Module}Module {
+    // Wire repositories
+    repo := repositories.New{Entity}MySQLRepository(db)
+    
+    // Wire use cases
+    useCase := usecases.New{Action}UseCase(repo)
+    
+    // Wire controllers
+    controller := controllers.New{Entity}Controller(*useCase)
+    
+    return &{Module}Module{
+        {Entity}Controller: controller,
+        {Action}UseCase:    useCase,
+    }
+}
+```
+
+### 6. Register in Container
+- Update `cmd/server/container/container.go`:
+```go
+import moduleInfra "github.com/refortunato/go_app_base/internal/{module}/infra"
+
+type Container struct {
+    {Module}Module *moduleInfra.{Module}Module
+    // ... other modules
+}
+
+func New(db *sql.DB, cfg *configs.Conf) (*Container, error) {
+    // ...
+    moduleModule := moduleInfra.New{Module}Module(db)
+    
+    return &Container{
+        {Module}Module: moduleModule,
+        // ...
+    }
+}
+```
+
+### 7. Register Routes
+- Update `internal/infra/web/register_routes.go`:
+```go
+import moduleWeb "github.com/refortunato/go_app_base/internal/{module}/infra/web"
+
+func RegisterRoutes(c *container.Container) func(*gin.Engine) {
+    return func(router *gin.Engine) {
+        moduleWeb.RegisterRoutes(router, c.{Module}Module.{Entity}Controller)
+        // ... other modules
+    }
+}
+```
+
+### Module independence checklist
+- ✅ Module does NOT import other modules (only `shared` and `configs`)
+- ✅ All dependencies wired in `module.go`
+- ✅ Routes registered in module's own `routes.go`
+- ✅ Can be extracted to separate service without changes
+
+## Additional Resources
+
+For detailed implementation guides:
+- **Routes Management**: See `docs/implementation/routes-management.md`
+- **Dependency Management**: See `docs/implementation/dependency-management.md`
 2. **Wait for approval** before applying code changes.
 3. If the user approves and the plan remains the same, proceed without asking again for each step.
 4. If the plan changes materially (new files, new behavior, new architecture), present an updated plan and ask again.

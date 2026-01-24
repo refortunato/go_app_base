@@ -48,6 +48,7 @@ func (e *Example) Validate() error {
 }
 
 // Getters
+
 func (e *Example) GetId() string {
 	return e.id
 }
@@ -65,6 +66,7 @@ func (e *Example) GetUpdatedAt() time.Time {
 }
 
 // Setters
+
 func (e *Example) SetDescription(description string) {
 	e.description = description
 	e.updatedAt = time.Now().UTC()

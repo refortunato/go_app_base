@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/refortunato/go_app_base/internal/core/domain/entities"
+	"github.com/refortunato/go_app_base/internal/example/core/domain/entities"
 )
 
 type exampleEntity struct {

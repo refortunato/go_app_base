@@ -6,10 +6,9 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
-	internalConf "github.com/refortunato/go_app_base/internal/infra/config"
 )
 
-func NewMySQL(cfg *internalConf.Conf) (*sql.DB, error) {
+func NewMySQL(cfg *Conf) (*sql.DB, error) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=UTC", cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
 
 	db, err := sql.Open("mysql", dsn)

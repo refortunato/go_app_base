@@ -3,8 +3,8 @@ package controllers
 import (
 	"net/http"
 
-	"github.com/refortunato/go_app_base/internal/core/application/usecases"
-	"github.com/refortunato/go_app_base/internal/infra/web/controllers/advisor"
+	"github.com/refortunato/go_app_base/internal/health/core/application/usecases"
+	"github.com/refortunato/go_app_base/internal/shared/web/advisor"
 	webcontext "github.com/refortunato/go_app_base/internal/shared/web/context"
 )
 

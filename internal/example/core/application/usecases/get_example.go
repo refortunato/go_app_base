@@ -3,7 +3,7 @@ package usecases
 import (
 	"time"
 
-	"github.com/refortunato/go_app_base/internal/core/application/repositories"
+	"github.com/refortunato/go_app_base/internal/example/core/application/repositories"
 )
 
 type GetExampleInputDTO struct {

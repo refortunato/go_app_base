@@ -10,7 +10,7 @@ import (
 
 	"github.com/refortunato/go_app_base/cmd/server/container"
 	"github.com/refortunato/go_app_base/configs"
-	"github.com/refortunato/go_app_base/internal/infra/web/routes"
+	infraWeb "github.com/refortunato/go_app_base/internal/infra/web"
 	"github.com/refortunato/go_app_base/internal/shared/web/server"
 
 	// mysql
@@ -53,7 +53,7 @@ func main() {
 	switch mode {
 	case "api":
 		fmt.Println("Starting API server...")
-		srv = server.NewGinServerWithRoutes(cfg.WebServerPort, routes.RegisterRoutes(c))
+		srv = server.NewGinServerWithRoutes(cfg.WebServerPort, infraWeb.RegisterRoutes(c))
 
 		// Inicia o servidor em uma goroutine
 		go func() {

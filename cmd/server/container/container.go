@@ -1,25 +1,20 @@
 package container
 
 import (
-"database/sql"
+	"database/sql"
 
-"github.com/refortunato/go_app_base/internal/core/application/usecases"
-"github.com/refortunato/go_app_base/internal/infra/config"
-infraRepositories "github.com/refortunato/go_app_base/internal/infra/repositories"
-"github.com/refortunato/go_app_base/internal/infra/web/controllers"
-"github.com/refortunato/go_app_base/internal/shared/logger"
+	"github.com/refortunato/go_app_base/configs"
+	exampleInfra "github.com/refortunato/go_app_base/internal/example/infra"
+	healthInfra "github.com/refortunato/go_app_base/internal/health/infra"
+	"github.com/refortunato/go_app_base/internal/shared/logger"
 )
 
 // Container holds all application dependencies
 // This is the Composition Root of the application
 type Container struct {
-	// Controllers (delivery layer)
-	ExampleController *controllers.ExampleController
-	HealthController  *controllers.HealthController
-
-	// Use Cases (application layer)
-	GetExampleUseCase  *usecases.GetExampleUseCase
-	HealthCheckUseCase *usecases.HealthCheckUseCase
+	// Modules
+	ExampleModule *exampleInfra.ExampleModule
+	HealthModule  *healthInfra.HealthModule
 
 	// Logger (shared utility)
 	Logger logger.Logger
@@ -27,29 +22,19 @@ type Container struct {
 
 // New creates and wires all application dependencies
 // This is the only place where dependencies are composed
-func New(db *sql.DB, cfg *config.Conf) (*Container, error) {
+func New(db *sql.DB, cfg *configs.Conf) (*Container, error) {
 	// Logger
 	log := logger.NewSlogLogger(cfg.ImageName, cfg.ImageVersion)
 	logger.SetGlobalLogger(log)
 	logger.Info("Logger initialized successfully")
 
-	// Repositories
-	exampleRepository := infraRepositories.NewExampleMySQLRepository(db)
-	healthRepository := infraRepositories.NewHealthMySQLRepository(db)
-
-	// Use Cases
-	getExampleUseCase := usecases.NewGetExampleUseCase(exampleRepository)
-	healthCheckUseCase := usecases.NewHealthCheckUseCase(healthRepository)
-
-	// Controllers
-	exampleController := controllers.NewExampleController(*getExampleUseCase)
-	healthController := controllers.NewHealthController(*healthCheckUseCase)
+	// Initialize modules (each module wires its own dependencies)
+	exampleModule := exampleInfra.NewExampleModule(db)
+	healthModule := healthInfra.NewHealthModule(db)
 
 	return &Container{
-		ExampleController:  exampleController,
-		HealthController:   healthController,
-		GetExampleUseCase:  getExampleUseCase,
-		HealthCheckUseCase: healthCheckUseCase,
-		Logger:             log,
+		ExampleModule: exampleModule,
+		HealthModule:  healthModule,
+		Logger:        log,
 	}, nil
 }
