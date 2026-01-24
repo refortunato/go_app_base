@@ -12,7 +12,7 @@ import (
 func RegisterRoutes(c *container.Container) func(*gin.Engine) {
 	return func(router *gin.Engine) {
 		// Register routes for each module
-		healthWeb.RegisterRoutes(router, c.HealthModule.HealthController)
-		exampleWeb.RegisterRoutes(router, c.ExampleModule.ExampleController)
+		healthWeb.RegisterRoutes(router, c.HealthModule)
+		exampleWeb.RegisterRoutes(router, c.ExampleModule)
 	}
 }
