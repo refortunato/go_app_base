@@ -3,8 +3,8 @@ package entities
 import (
 	"time"
 
+	"github.com/refortunato/go_app_base/internal/example/core/domain/errors"
 	"github.com/refortunato/go_app_base/internal/shared"
-	sharedErrors "github.com/refortunato/go_app_base/internal/shared/errors"
 )
 
 type Example struct {
@@ -42,7 +42,7 @@ func RestoreExample(
 
 func (e *Example) Validate() error {
 	if e.description == "" {
-		return sharedErrors.ErrDescriptionIsRequired
+		return errors.ErrDescriptionIsRequired
 	}
 	return nil
 }
