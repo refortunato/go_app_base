@@ -40,6 +40,44 @@ This project follows Clean Architecture and Domain-Driven Design (DDD) patterns:
 - `internal/infra/` - Infrastructure implementations (repositories, web, dependencies)
 - `internal/shared/` - Shared utilities across modules
 
+### Architecture Styles
+
+This project supports **two architectural styles** for different use cases:
+
+#### 1. DDD with Clean Architecture (for complex business logic)
+Used by modules: `example/`, `health/`
+
+Structure:
+```
+internal/{module}/
+  ├── core/
+  │   ├── application/  # Use cases, repository interfaces
+  │   └── domain/       # Entities, value objects, domain services
+  └── infra/
+      ├── repositories/ # Database implementations
+      └── web/          # Controllers, routes
+```
+
+**Use when**: Complex business rules, multiple aggregates, rich domain logic
+
+#### 2. 4-Tier Simplified Architecture (for CRUD operations)
+Used by modules: `simple_module/`
+
+Structure:
+```
+internal/{module}/
+  ├── models/       # Data structures
+  ├── repositories/ # Database access
+  ├── services/     # Business logic
+  ├── controllers/  # HTTP handlers
+  ├── routes.go     # Route definitions
+  └── module.go     # Dependency wiring
+```
+
+**Use when**: Simple CRUD, straightforward validations, minimal domain complexity
+
+Both styles maintain **module independence** and use the same **dependency injection pattern**.
+
 ## Prerequisites
 
 - Docker and Docker Compose
@@ -100,6 +138,17 @@ GET /examples/:id
 ```
 
 Returns an example resource by ID.
+
+### Product Resource (Simple Module)
+```http
+GET    /products           # List all products (pagination: ?limit=10&offset=0)
+GET    /products/:id       # Get product by ID
+POST   /products           # Create new product
+PUT    /products/:id       # Update product
+DELETE /products/:id       # Delete product
+```
+
+Demonstrates a simpler 4-tier architecture for CRUD operations.
 
 ## Runtime Modes
 

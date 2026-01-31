@@ -140,6 +140,58 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
 
 ## Architecture patterns and principles
 
+### Multiple architecture styles supported
+
+This project supports **two architectural patterns** depending on module complexity:
+
+#### 1. DDD + Clean Architecture (for complex domains)
+**Use when**: Rich business logic, multiple aggregates, complex validations, domain events
+
+**Structure**:
+```
+internal/{module}/
+  ├── core/
+  │   ├── application/  # Use cases, repository interfaces
+  │   │   ├── usecases/
+  │   │   ├── repositories/
+  │   │   └── services/
+  │   └── domain/       # Entities, value objects, domain services
+  │       ├── entities/
+  │       ├── valueobjects/
+  │       ├── services/
+  │       └── errors/
+  └── infra/
+      ├── repositories/ # Implementations
+      ├── web/
+      │   ├── controllers/
+      │   └── routes.go
+      └── module.go
+```
+
+**Examples**: `example/`, `health/` modules
+
+#### 2. 4-Tier Simplified Architecture (for CRUD operations)
+**Use when**: Simple CRUD, straightforward validations, minimal domain complexity
+
+**Structure**:
+```
+internal/{module}/
+  ├── models/       # Data structures (no business logic)
+  ├── repositories/ # Database access
+  ├── services/     # Business logic and validations
+  ├── controllers/  # HTTP handlers
+  ├── routes.go     # Route definitions
+  └── module.go     # Dependency wiring
+```
+
+**Example**: `simple_module/` (Product CRUD)
+
+**Key points**:
+- **Both patterns maintain module independence**
+- **Both use the same factory pattern** (`module.go`)
+- **Both register routes the same way** (`routes.go`)
+- Choose based on **domain complexity**, not preference
+
 ### Separation of concerns (shared vs infra)
 
 **`internal/shared/`**
@@ -347,6 +399,159 @@ func RegisterRoutes(c *container.Container) func(*gin.Engine) {
 - ✅ All dependencies wired in `module.go`
 - ✅ Routes registered in module's own `routes.go`
 - ✅ Can be extracted to separate service without changes
+
+## Creating a simplified module (4-tier architecture)
+
+For simple CRUD operations without complex domain logic, use the 4-tier pattern:
+
+### Step-by-step guide
+
+1. **Create directory structure**:
+```
+internal/{module}/
+  ├── models/       # Data structures
+  ├── repositories/ # Database access
+  ├── services/     # Business logic
+  ├── controllers/  # HTTP handlers
+  ├── routes.go     # Route definitions
+  └── module.go     # Dependency wiring
+```
+
+2. **Create model** (`models/{entity}.go`):
+```go
+package models
+
+type Product struct {
+    ID          string
+    Name        string
+    Description string
+    CreatedAt   time.Time
+}
+```
+
+3. **Create repository** (`repositories/{entity}_repository.go`):
+```go
+package repositories
+
+type ProductRepository struct {
+    db *sql.DB
+}
+
+func NewProductRepository(db *sql.DB) *ProductRepository {
+    return &ProductRepository{db: db}
+}
+
+func (r *ProductRepository) FindById(id string) (*models.Product, error) {
+    // Database query implementation
+}
+```
+
+4. **Create service** (`services/{entity}_service.go`):
+```go
+package services
+
+type ProductService struct {
+    repository *repositories.ProductRepository
+}
+
+func NewProductService(repo *repositories.ProductRepository) *ProductService {
+    return &ProductService{repository: repo}
+}
+
+func (s *ProductService) GetProduct(id string) (*models.Product, error) {
+    // Business logic and validation
+    return s.repository.FindById(id)
+}
+```
+
+5. **Create controller** (`controllers/{entity}_controller.go`):
+```go
+package controllers
+
+type ProductController struct {
+    service *services.ProductService
+}
+
+func NewProductController(service *services.ProductService) *ProductController {
+    return &ProductController{service: service}
+}
+
+func (c *ProductController) GetProduct(ctx context.WebContext) {
+    id := ctx.Param("id")
+    product, err := c.service.GetProduct(id)
+    // Handle response
+}
+```
+
+6. **Create routes** (`routes.go`):
+```go
+package simple_module
+
+func RegisterRoutes(router *gin.Engine, module *SimpleModule) {
+    router.GET("/products/:id", func(ctx *gin.Context) {
+        module.ProductController.GetProduct(context.NewGinContextAdapter(ctx))
+    })
+}
+```
+
+7. **Create module factory** (`module.go`):
+```go
+package simple_module
+
+type SimpleModule struct {
+    ProductController *controllers.ProductController
+    ProductService    *services.ProductService
+}
+
+func NewSimpleModule(db *sql.DB) *SimpleModule {
+    repo := repositories.NewProductRepository(db)
+    service := services.NewProductService(repo)
+    controller := controllers.NewProductController(service)
+    
+    return &SimpleModule{
+        ProductController: controller,
+        ProductService:    service,
+    }
+}
+```
+
+8. **Register in container** (`cmd/server/container/container.go`):
+```go
+import "github.com/refortunato/go_app_base/internal/simple_module"
+
+type Container struct {
+    SimpleModule *simple_module.SimpleModule
+    // ...
+}
+
+func New(db *sql.DB, cfg *configs.Conf) (*Container, error) {
+    simpleModule := simple_module.NewSimpleModule(db)
+    return &Container{SimpleModule: simpleModule}, nil
+}
+```
+
+9. **Register routes** (`internal/infra/web/register_routes.go`):
+```go
+import "github.com/refortunato/go_app_base/internal/simple_module"
+
+func RegisterRoutes(c *container.Container) func(*gin.Engine) {
+    return func(router *gin.Engine) {
+        simple_module.RegisterRoutes(router, c.SimpleModule)
+    }
+}
+```
+
+### When to use 4-tier vs DDD
+
+| Use 4-Tier When | Use DDD When |
+|-----------------|--------------|
+| Simple CRUD operations | Complex business rules |
+| Basic validations | Multiple aggregates |
+| Straightforward data access | Rich domain logic |
+| Minimal business complexity | Domain events needed |
+| Fast development for simple features | Long-term maintainability critical |
+
+**Example**: `simple_module/` (product CRUD) vs `example/` (complex domain)
 
 ## Additional Resources
 

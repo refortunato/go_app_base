@@ -5,6 +5,7 @@ import (
 	"github.com/refortunato/go_app_base/cmd/server/container"
 	exampleWeb "github.com/refortunato/go_app_base/internal/example/infra/web"
 	healthWeb "github.com/refortunato/go_app_base/internal/health/infra/web"
+	"github.com/refortunato/go_app_base/internal/simple_module"
 )
 
 // RegisterRoutes is the main route orchestrator
@@ -14,5 +15,6 @@ func RegisterRoutes(c *container.Container) func(*gin.Engine) {
 		// Register routes for each module
 		healthWeb.RegisterRoutes(router, c.HealthModule)
 		exampleWeb.RegisterRoutes(router, c.ExampleModule)
+		simple_module.RegisterRoutes(router, c.SimpleModule)
 	}
 }
