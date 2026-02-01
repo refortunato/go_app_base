@@ -1029,6 +1029,17 @@ func New${ENTITY_NAME_CAPITALIZED}Controller(
 	}
 }
 
+// Create godoc
+// @Summary      Create new ${ENTITY_NAME_LOWER}
+// @Description  Creates a new ${ENTITY_NAME_LOWER} in the system
+// @Tags         ${MODULE_NAME}
+// @Accept       json
+// @Produce      json
+// @Param        input  body      usecases.Create${ENTITY_NAME_CAPITALIZED}InputDTO  true  "${ENTITY_NAME_CAPITALIZED} data"
+// @Success      201    {object}  usecases.Create${ENTITY_NAME_CAPITALIZED}OutputDTO
+// @Failure      400    {object}  errors.ProblemDetails  "Invalid request data"
+// @Failure      500    {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /${ENTITY_NAME_LOWER}s [post]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Create(ctx context.WebContext) {
 	var request usecases.Create${ENTITY_NAME_CAPITALIZED}InputDTO
 	if err := ctx.BindJSON(&request); err != nil {
@@ -1045,6 +1056,17 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) Create(ctx context.WebContext) {
 	ctx.JSON(http.StatusCreated, output)
 }
 
+// Get godoc
+// @Summary      Get ${ENTITY_NAME_LOWER} by ID
+// @Description  Retrieves a specific ${ENTITY_NAME_LOWER} from the database
+// @Tags         ${MODULE_NAME}
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "${ENTITY_NAME_CAPITALIZED} ID (UUID format)"
+// @Success      200  {object}  usecases.Get${ENTITY_NAME_CAPITALIZED}OutputDTO
+// @Failure      404  {object}  errors.ProblemDetails  "${ENTITY_NAME_CAPITALIZED} not found"
+// @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /${ENTITY_NAME_LOWER}s/{id} [get]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Get(ctx context.WebContext) {
 	id := ctx.Param("id")
 	
@@ -1062,6 +1084,18 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) Get(ctx context.WebContext) {
 	ctx.JSON(http.StatusOK, output)
 }
 
+// List godoc
+// @Summary      List all ${ENTITY_NAME_LOWER}s
+// @Description  Returns a paginated list of ${ENTITY_NAME_LOWER}s
+// @Tags         ${MODULE_NAME}
+// @Accept       json
+// @Produce      json
+// @Param        page   query     int  false  "Page number" default(1)
+// @Param        limit  query     int  false  "Items per page" default(10)
+// @Success      200    {object}  usecases.List${ENTITY_NAME_CAPITALIZED}OutputDTO
+// @Failure      400    {object}  errors.ProblemDetails  "Invalid pagination parameters"
+// @Failure      500    {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /${ENTITY_NAME_LOWER}s [get]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) List(ctx context.WebContext) {
 	pageStr := ctx.Query("page")
 	limitStr := ctx.Query("limit")
@@ -1084,6 +1118,19 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) List(ctx context.WebContext) {
 	ctx.JSON(http.StatusOK, output)
 }
 
+// Update godoc
+// @Summary      Update ${ENTITY_NAME_LOWER}
+// @Description  Updates an existing ${ENTITY_NAME_LOWER}
+// @Tags         ${MODULE_NAME}
+// @Accept       json
+// @Produce      json
+// @Param        id     path      string  true  "${ENTITY_NAME_CAPITALIZED} ID"
+// @Param        input  body      usecases.Update${ENTITY_NAME_CAPITALIZED}InputDTO  true  "Updated ${ENTITY_NAME_LOWER} data"
+// @Success      200    {object}  usecases.Update${ENTITY_NAME_CAPITALIZED}OutputDTO
+// @Failure      400    {object}  errors.ProblemDetails  "Invalid request data"
+// @Failure      404    {object}  errors.ProblemDetails  "${ENTITY_NAME_CAPITALIZED} not found"
+// @Failure      500    {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /${ENTITY_NAME_LOWER}s/{id} [put]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Update(ctx context.WebContext) {
 	id := ctx.Param("id")
 	
@@ -1108,6 +1155,17 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) Update(ctx context.WebContext) {
 	ctx.JSON(http.StatusOK, output)
 }
 
+// Delete godoc
+// @Summary      Delete ${ENTITY_NAME_LOWER}
+// @Description  Removes a ${ENTITY_NAME_LOWER} from the system
+// @Tags         ${MODULE_NAME}
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "${ENTITY_NAME_CAPITALIZED} ID"
+// @Success      200  {object}  usecases.Delete${ENTITY_NAME_CAPITALIZED}OutputDTO
+// @Failure      404  {object}  errors.ProblemDetails  "${ENTITY_NAME_CAPITALIZED} not found"
+// @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /${ENTITY_NAME_LOWER}s/{id} [delete]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Delete(ctx context.WebContext) {
 	id := ctx.Param("id")
 
@@ -1623,6 +1681,17 @@ func New${ENTITY_NAME_CAPITALIZED}Controller(service *services.${ENTITY_NAME_CAP
 	return &${ENTITY_NAME_CAPITALIZED}Controller{service: service}
 }
 
+// Get godoc
+// @Summary      Get ${ENTITY_NAME_LOWER} by ID
+// @Description  Retrieves a specific ${ENTITY_NAME_LOWER} from the database
+// @Tags         ${MODULE_NAME}
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "${ENTITY_NAME_CAPITALIZED} ID (UUID format)"
+// @Success      200  {object}  models.${ENTITY_NAME_CAPITALIZED}
+// @Failure      404  {object}  errors.ProblemDetails  "${ENTITY_NAME_CAPITALIZED} not found"
+// @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /${ENTITY_NAME_LOWER}s/{id} [get]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Get(ctx context.WebContext) {
 	id := ctx.Param("id")
 
@@ -1635,6 +1704,18 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) Get(ctx context.WebContext) {
 	ctx.JSON(http.StatusOK, entity)
 }
 
+// List godoc
+// @Summary      List all ${ENTITY_NAME_LOWER}s
+// @Description  Returns a paginated list of ${ENTITY_NAME_LOWER}s
+// @Tags         ${MODULE_NAME}
+// @Accept       json
+// @Produce      json
+// @Param        page   query     int  false  "Page number" default(1)
+// @Param        limit  query     int  false  "Items per page" default(10)
+// @Success      200    {object}  dto.PaginatedResponse
+// @Failure      400    {object}  errors.ProblemDetails  "Invalid pagination parameters"
+// @Failure      500    {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /${ENTITY_NAME_LOWER}s [get]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) List(ctx context.WebContext) {
 	pageStr := ctx.Query("page")
 	limitStr := ctx.Query("limit")
@@ -1654,6 +1735,16 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) List(ctx context.WebContext) {
 	ctx.JSON(http.StatusOK, result)
 }
 
+// Create godoc
+// @Summary      Create new ${ENTITY_NAME_LOWER}
+// @Description  Creates a new ${ENTITY_NAME_LOWER} in the system
+// @Tags         ${MODULE_NAME}
+// @Accept       json
+// @Produce      json
+// @Success      201    {object}  models.${ENTITY_NAME_CAPITALIZED}
+// @Failure      400    {object}  errors.ProblemDetails  "Invalid request data"
+// @Failure      500    {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /${ENTITY_NAME_LOWER}s [post]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Create(ctx context.WebContext) {
 	var request struct {
 EOF
@@ -1691,6 +1782,18 @@ EOF
 	ctx.JSON(http.StatusCreated, entity)
 }
 
+// Update godoc
+// @Summary      Update ${ENTITY_NAME_LOWER}
+// @Description  Updates an existing ${ENTITY_NAME_LOWER}
+// @Tags         ${MODULE_NAME}
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "${ENTITY_NAME_CAPITALIZED} ID"
+// @Success      200  {object}  models.${ENTITY_NAME_CAPITALIZED}
+// @Failure      400  {object}  errors.ProblemDetails  "Invalid request data"
+// @Failure      404  {object}  errors.ProblemDetails  "${ENTITY_NAME_CAPITALIZED} not found"
+// @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /${ENTITY_NAME_LOWER}s/{id} [put]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Update(ctx context.WebContext) {
 	id := ctx.Param("id")
 
@@ -1731,6 +1834,17 @@ EOF
 	ctx.JSON(http.StatusOK, entity)
 }
 
+// Delete godoc
+// @Summary      Delete ${ENTITY_NAME_LOWER}
+// @Description  Removes a ${ENTITY_NAME_LOWER} from the system
+// @Tags         ${MODULE_NAME}
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "${ENTITY_NAME_CAPITALIZED} ID"
+// @Success      200  {object}  map[string]bool
+// @Failure      404  {object}  errors.ProblemDetails  "${ENTITY_NAME_CAPITALIZED} not found"
+// @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /${ENTITY_NAME_LOWER}s/{id} [delete]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Delete(ctx context.WebContext) {
 	id := ctx.Param("id")
 
