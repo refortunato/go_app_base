@@ -48,21 +48,21 @@ func NewPaginationRequestDTO(pageStr, limitStr string) (*PaginationRequestDTO, e
 
 // PaginationResponseDTO represents pagination metadata in responses
 type PaginationResponseDTO struct {
-	Data       int `json:"data"`
+	Page       int `json:"page"`
 	Limit      int `json:"limit"`
 	TotalItems int `json:"total_items,omitempty"`
 	TotalPages int `json:"total_pages,omitempty"`
 }
 
 // NewPaginationResponseDTO creates pagination metadata for responses
-func NewPaginationResponseDTO(data, limit, totalItems int) *PaginationResponseDTO {
+func NewPaginationResponseDTO(page, limit, totalItems int) *PaginationResponseDTO {
 	totalPages := 0
 	if totalItems > 0 {
 		totalPages = (totalItems + limit - 1) / limit
 	}
 
 	return &PaginationResponseDTO{
-		Data:       data,
+		Page:       page,
 		Limit:      limit,
 		TotalItems: totalItems,
 		TotalPages: totalPages,
