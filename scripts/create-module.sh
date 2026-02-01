@@ -56,6 +56,9 @@ fi
 # Convert module name to lowercase and replace spaces with underscores
 MODULE_NAME=$(echo "$MODULE_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
 
+# Create capitalized version for Go types
+MODULE_NAME_CAPITALIZED="$(echo "${MODULE_NAME:0:1}" | tr '[:lower:]' '[:upper:]')${MODULE_NAME:1}"
+
 print_info "Module name: $MODULE_NAME"
 echo ""
 
@@ -105,21 +108,21 @@ import (
 	"${MODULE_PATH}/internal/${MODULE_NAME}/services"
 )
 
-// ${MODULE_NAME^}Module holds all initialized dependencies for the ${MODULE_NAME} module (4-tier architecture)
-type ${MODULE_NAME^}Module struct {
+// ${MODULE_NAME_CAPITALIZED}Module holds all initialized dependencies for the ${MODULE_NAME} module (4-tier architecture)
+type ${MODULE_NAME_CAPITALIZED}Module struct {
 	// TODO: Add your controllers here
 	// Example: ProductController *controllers.ProductController
 }
 
-// New${MODULE_NAME^}Module creates and wires all dependencies for the ${MODULE_NAME} module
-func New${MODULE_NAME^}Module(db *sql.DB) *${MODULE_NAME^}Module {
+// New${MODULE_NAME_CAPITALIZED}Module creates and wires all dependencies for the ${MODULE_NAME} module
+func New${MODULE_NAME_CAPITALIZED}Module(db *sql.DB) *${MODULE_NAME_CAPITALIZED}Module {
 	// TODO: Wire your dependencies here
 	// Step 1: Initialize repositories
 	// Step 2: Initialize services (inject repositories)
 	// Step 3: Initialize controllers (inject services)
 	// Step 4: Return module with all dependencies wired
 	
-	return &${MODULE_NAME^}Module{
+	return &${MODULE_NAME_CAPITALIZED}Module{
 		// TODO: Initialize your dependencies
 	}
 }
@@ -137,7 +140,7 @@ import (
 )
 
 // RegisterRoutes registers all routes for the ${MODULE_NAME} module (4-tier architecture)
-func RegisterRoutes(router *gin.Engine, module *${MODULE_NAME^}Module) {
+func RegisterRoutes(router *gin.Engine, module *${MODULE_NAME_CAPITALIZED}Module) {
 	// TODO: Add your routes here
 	// Example:
 	// router.GET("/${MODULE_NAME}/:id", func(ctx *gin.Context) {
@@ -172,22 +175,22 @@ import (
 	"${MODULE_PATH}/internal/${MODULE_NAME}/infra/web/controllers"
 )
 
-// ${MODULE_NAME^}Module encapsulates all dependencies for the ${MODULE_NAME} module
-type ${MODULE_NAME^}Module struct {
+// ${MODULE_NAME_CAPITALIZED}Module encapsulates all dependencies for the ${MODULE_NAME} module
+type ${MODULE_NAME_CAPITALIZED}Module struct {
 	// TODO: Add your controllers and use cases here
 	// Example: GetExampleUseCase *usecases.GetExampleUseCase
 	// Example: ExampleController *controllers.ExampleController
 }
 
-// New${MODULE_NAME^}Module creates and wires all dependencies for the ${MODULE_NAME} module
-func New${MODULE_NAME^}Module(db *sql.DB) *${MODULE_NAME^}Module {
+// New${MODULE_NAME_CAPITALIZED}Module creates and wires all dependencies for the ${MODULE_NAME} module
+func New${MODULE_NAME_CAPITALIZED}Module(db *sql.DB) *${MODULE_NAME_CAPITALIZED}Module {
 	// TODO: Wire your dependencies here
 	// Step 1: Initialize repositories
 	// Step 2: Initialize use cases (inject repositories)
 	// Step 3: Initialize controllers (inject use cases)
 	// Step 4: Return module with all dependencies wired
 	
-	return &${MODULE_NAME^}Module{
+	return &${MODULE_NAME_CAPITALIZED}Module{
 		// TODO: Initialize your dependencies
 	}
 }
@@ -206,7 +209,7 @@ import (
 )
 
 // RegisterRoutes registers all routes for the ${MODULE_NAME} module
-func RegisterRoutes(router *gin.Engine, module *infra.${MODULE_NAME^}Module) {
+func RegisterRoutes(router *gin.Engine, module *infra.${MODULE_NAME_CAPITALIZED}Module) {
 	// TODO: Add your routes here
 	// Example:
 	// router.GET("/${MODULE_NAME}/:id", func(ctx *gin.Context) {
@@ -228,15 +231,15 @@ CONTAINER_FILE="$PROJECT_ROOT/cmd/server/container/container.go"
 if [ "$ARCH_TYPE" = "1" ]; then
     IMPORT_ALIAS="${MODULE_NAME}"
     IMPORT_PATH="${MODULE_PATH}/internal/${MODULE_NAME}"
-    STRUCT_NAME="${MODULE_NAME^}Module"
-    STRUCT_TYPE="*${MODULE_NAME}.${MODULE_NAME^}Module"
-    INIT_CALL="${MODULE_NAME}.New${MODULE_NAME^}Module(db)"
+    STRUCT_NAME="${MODULE_NAME_CAPITALIZED}Module"
+    STRUCT_TYPE="*${MODULE_NAME}.${MODULE_NAME_CAPITALIZED}Module"
+    INIT_CALL="${MODULE_NAME}.New${MODULE_NAME_CAPITALIZED}Module(db)"
 else
     IMPORT_ALIAS="${MODULE_NAME}Infra"
     IMPORT_PATH="${MODULE_PATH}/internal/${MODULE_NAME}/infra"
-    STRUCT_NAME="${MODULE_NAME^}Module"
-    STRUCT_TYPE="*${MODULE_NAME}Infra.${MODULE_NAME^}Module"
-    INIT_CALL="${MODULE_NAME}Infra.New${MODULE_NAME^}Module(db)"
+    STRUCT_NAME="${MODULE_NAME_CAPITALIZED}Module"
+    STRUCT_TYPE="*${MODULE_NAME}Infra.${MODULE_NAME_CAPITALIZED}Module"
+    INIT_CALL="${MODULE_NAME}Infra.New${MODULE_NAME_CAPITALIZED}Module(db)"
 fi
 
 # Add import
