@@ -78,6 +78,32 @@ internal/{module}/
 
 Both styles maintain **module independence** and use the same **dependency injection pattern**.
 
+## Development Scripts
+
+Automate common development tasks with the provided scripts:
+
+### Creating New Modules
+```sh
+./scripts/create-module.sh
+```
+Creates a complete module structure with dependency wiring. Supports both DDD and 4-tier architectures.
+
+📖 **[Complete Module Creation Guide](./docs/scripts/create-module-guide.md)**
+
+### Creating New Entities
+```sh
+./scripts/create-entity.sh
+```
+Scaffolds complete CRUD operations for an entity within an existing module. Generates domain entities, repositories, use cases/services, controllers, and routes.
+
+📖 **[Complete Entity Creation Guide](./docs/scripts/create-entity-guide.md)**
+
+### Best Practices
+- Use `create-module.sh` first to set up your module structure
+- Then use `create-entity.sh` to add entities with full CRUD operations
+- Choose DDD for complex business logic, 4-tier for simple CRUD
+- All dependencies are automatically wired in the container
+
 ## Prerequisites
 
 - Docker and Docker Compose
