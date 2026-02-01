@@ -25,3 +25,7 @@ func ReturnBadRequestError(c webcontext.WebContext, err error) {
 		return
 	}
 }
+
+func ReturnNotFoundError(c webcontext.WebContext) {
+	c.JSON(http.StatusNotFound, map[string]string{"error": "resource not found"})
+}
