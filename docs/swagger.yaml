@@ -1,0 +1,287 @@
+basePath: /
+definitions:
+  controllers.CreateProductRequest:
+    properties:
+      description:
+        example: High-performance laptop
+        type: string
+      name:
+        example: Laptop Dell XPS 15
+        type: string
+      price:
+        example: 5499.99
+        type: number
+      stock:
+        example: 10
+        type: integer
+    type: object
+  controllers.UpdateProductRequest:
+    properties:
+      description:
+        example: Updated description
+        type: string
+      name:
+        example: Laptop Dell XPS 15 (Updated)
+        type: string
+      price:
+        example: 4999.99
+        type: number
+      stock:
+        example: 15
+        type: integer
+    type: object
+  errors.ProblemDetails:
+    properties:
+      code:
+        description: Código específico do erro
+        type: string
+      detail:
+        description: Descrição detalhada
+        type: string
+      error_context:
+        description: business ou infra
+        type: string
+      instance:
+        description: URI da ocorrência do erro
+        type: string
+      status:
+        description: Código HTTP
+        type: integer
+      title:
+        description: Título curto do erro
+        type: string
+      type:
+        description: URI identificando o tipo do erro
+        type: string
+    type: object
+  models.Product:
+    properties:
+      created_at:
+        example: "2024-01-01T10:00:00Z"
+        type: string
+      description:
+        example: High-performance laptop for professionals
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      name:
+        example: Laptop Dell XPS 15
+        type: string
+      price:
+        example: 5499.99
+        type: number
+      stock:
+        example: 10
+        type: integer
+      updated_at:
+        example: "2024-01-01T10:00:00Z"
+        type: string
+    type: object
+  usecases.GetExampleOutputDTO:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Template base para aplicações Go seguindo Clean Architecture + DDD
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Go App Base API
+  version: "1.0"
+paths:
+  /examples/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a specific example entity from the database
+      parameters:
+      - description: Example ID (UUID format)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/usecases.GetExampleOutputDTO'
+        "404":
+          description: Example not found
+          schema:
+            $ref: '#/definitions/errors.ProblemDetails'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ProblemDetails'
+      summary: Get example by ID
+      tags:
+      - examples
+  /products:
+    get:
+      description: Returns a paginated list of products
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated product list
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            $ref: '#/definitions/errors.ProblemDetails'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ProblemDetails'
+      summary: List all products
+      tags:
+      - products
+    post:
+      consumes:
+      - application/json
+      description: Creates a new product in the system
+      parameters:
+      - description: Product data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Product'
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/errors.ProblemDetails'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ProblemDetails'
+      summary: Create new product
+      tags:
+      - products
+  /products/{id}:
+    delete:
+      description: Removes a product from the system
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No content
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/errors.ProblemDetails'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ProblemDetails'
+      summary: Delete product
+      tags:
+      - products
+    get:
+      description: Retrieves a specific product from the database
+      parameters:
+      - description: Product ID (UUID format)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Product'
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/errors.ProblemDetails'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ProblemDetails'
+      summary: Get product by ID
+      tags:
+      - products
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing product
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated product data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Product'
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/errors.ProblemDetails'
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/errors.ProblemDetails'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ProblemDetails'
+      summary: Update product
+      tags:
+      - products
+schemes:
+- http
+- https
+swagger: "2.0"

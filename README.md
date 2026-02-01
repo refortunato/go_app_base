@@ -151,6 +151,20 @@ make go-mod-tidy
 
 ## Available Endpoints
 
+### API Documentation (Swagger)
+```
+http://localhost:8080/swagger/index.html
+```
+
+Interactive API documentation with **Swagger UI**. Test endpoints directly in your browser.
+
+**Generate/Update documentation**:
+```sh
+make swagger
+```
+
+📖 **[Complete Swagger Guide](./docs/implementation/swagger-guide.md)**
+
 ### Health Check
 ```http
 GET /health

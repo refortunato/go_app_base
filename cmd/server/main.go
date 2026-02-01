@@ -15,7 +15,27 @@ import (
 
 	// mysql
 	_ "github.com/go-sql-driver/mysql"
+
+	// swagger
+	_ "github.com/refortunato/go_app_base/docs"
 )
+
+// @title           Go App Base API
+// @version         1.0
+// @description     Template base para aplicações Go seguindo Clean Architecture + DDD
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:8080
+// @BasePath  /
+
+// @schemes http https
 
 func main() {
 	cfg, err := configs.LoadConfig(".")

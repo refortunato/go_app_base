@@ -103,6 +103,7 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
 - Each module exports a `RegisterRoutes(router *gin.Engine, controller)` function.
 - The central orchestrator in `internal/infra/web/register_routes.go` calls each module's registration function.
 - This keeps modules independent and prepares them for potential extraction into microservices.
+- **Swagger documentation**: All controller methods must have Swagger annotations (see Swagger section below).
 
 ### Repositories
 - Repository interfaces must be defined in `internal/{module}/core/application/repositories`.
@@ -553,9 +554,83 @@ func RegisterRoutes(c *container.Container) func(*gin.Engine) {
 
 **Example**: `simple_module/` (product CRUD) vs `example/` (complex domain)
 
+## API Documentation (Swagger)
+
+This project uses **swaggo/swag** for automatic API documentation generation via code annotations.
+
+### Key Points
+- Swagger UI available at: `http://localhost:8080/swagger/index.html`
+- Documentation is generated via Docker (no local installation needed)
+- All controller methods must have Swagger annotations
+
+### Generating Documentation
+```bash
+make swagger
+```
+
+This command runs `swag init` inside a Docker container and generates:
+- `docs/docs.go` - Go embedded documentation
+- `docs/swagger.json` - OpenAPI 3.0 JSON spec
+- `docs/swagger.yaml` - OpenAPI 3.0 YAML spec
+
+**Important**: Always commit generated files in `docs/` to git.
+
+### Documentation Pattern
+
+Every controller method must have Swagger comments:
+
+```go
+// GetExample godoc
+// @Summary      Get example by ID
+// @Description  Retrieves a specific example entity from the database
+// @Tags         examples
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Example ID (UUID format)"
+// @Success      200  {object}  usecases.GetExampleOutputDTO
+// @Failure      404  {object}  errors.ProblemDetails  "Example not found"
+// @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /examples/{id} [get]
+func (controller *ExampleController) GetExample(c webcontext.WebContext) {
+    // implementation...
+}
+```
+
+### DTOs Must Include Examples
+
+```go
+type CreateUserInputDTO struct {
+    // Full name of the user
+    Name string `json:"name" example:"João Silva"`
+    
+    // Unique email address
+    Email string `json:"email" example:"joao@example.com"`
+    
+    // Age (must be 18+)
+    Age int `json:"age" example:"25"`
+}
+```
+
+### Workflow
+1. Create/modify controller method
+2. Add Swagger annotations
+3. Run `make swagger` to generate docs
+4. Test in Swagger UI (`http://localhost:8080/swagger/index.html`)
+5. Commit changes including `docs/` files
+
+### Configuration
+Global API configuration is in `cmd/server/main.go`:
+- Title, version, description
+- Host (localhost:8080)
+- Base path (/)
+- Contact info, license
+
+For complete documentation guide, see: `docs/implementation/swagger-guide.md`
+
 ## Additional Resources
 
 For detailed implementation guides:
+- **Swagger Documentation**: See `docs/implementation/swagger-guide.md`
 - **Routes Management**: See `docs/implementation/routes-management.md`
 - **Dependency Management**: See `docs/implementation/dependency-management.md`
 2. **Wait for approval** before applying code changes.

@@ -19,7 +19,32 @@ func NewProductController(service *services.ProductService) *ProductController {
 	return &ProductController{service: service}
 }
 
-// GetProduct handles GET /products/:id
+// CreateProductRequest represents the request body for creating a product
+type CreateProductRequest struct {
+	Name        string  `json:"name" example:"Laptop Dell XPS 15"`
+	Description string  `json:"description" example:"High-performance laptop"`
+	Price       float64 `json:"price" example:"5499.99"`
+	Stock       int     `json:"stock" example:"10"`
+}
+
+// UpdateProductRequest represents the request body for updating a product
+type UpdateProductRequest struct {
+	Name        string  `json:"name" example:"Laptop Dell XPS 15 (Updated)"`
+	Description string  `json:"description" example:"Updated description"`
+	Price       float64 `json:"price" example:"4999.99"`
+	Stock       int     `json:"stock" example:"15"`
+}
+
+// GetProduct godoc
+// @Summary      Get product by ID
+// @Description  Retrieves a specific product from the database
+// @Tags         products
+// @Produce      json
+// @Param        id   path      string  true  "Product ID (UUID format)"
+// @Success      200  {object}  models.Product
+// @Failure      404  {object}  errors.ProblemDetails  "Product not found"
+// @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /products/{id} [get]
 func (c *ProductController) GetProduct(ctx context.WebContext) {
 	id := ctx.Param("id")
 
@@ -32,7 +57,17 @@ func (c *ProductController) GetProduct(ctx context.WebContext) {
 	ctx.JSON(http.StatusOK, product)
 }
 
-// ListProducts handles GET /products
+// ListProducts godoc
+// @Summary      List all products
+// @Description  Returns a paginated list of products
+// @Tags         products
+// @Produce      json
+// @Param        page   query  int  false  "Page number" default(1)
+// @Param        limit  query  int  false  "Items per page" default(10)
+// @Success      200    {object}  map[string]interface{}  "Paginated product list"
+// @Failure      400    {object}  errors.ProblemDetails   "Invalid pagination parameters"
+// @Failure      500    {object}  errors.ProblemDetails   "Internal server error"
+// @Router       /products [get]
 func (c *ProductController) ListProducts(ctx context.WebContext) {
 	// Parse pagination parameters from query string
 	pageStr := ctx.Query("page")
@@ -60,14 +95,19 @@ func (c *ProductController) ListProducts(ctx context.WebContext) {
 	})
 }
 
-// CreateProduct handles POST /products
+// CreateProduct godoc
+// @Summary      Create new product
+// @Description  Creates a new product in the system
+// @Tags         products
+// @Accept       json
+// @Produce      json
+// @Param        request  body      CreateProductRequest  true  "Product data"
+// @Success      201      {object}  models.Product
+// @Failure      400      {object}  errors.ProblemDetails  "Invalid input"
+// @Failure      500      {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /products [post]
 func (c *ProductController) CreateProduct(ctx context.WebContext) {
-	var request struct {
-		Name        string  `json:"name"`
-		Description string  `json:"description"`
-		Price       float64 `json:"price"`
-		Stock       int     `json:"stock"`
-	}
+	var request CreateProductRequest
 
 	if err := ctx.BindJSON(&request); err != nil {
 		advisor.ReturnBadRequestError(ctx, err)
@@ -88,16 +128,23 @@ func (c *ProductController) CreateProduct(ctx context.WebContext) {
 	ctx.JSON(http.StatusCreated, product)
 }
 
-// UpdateProduct handles PUT /products/:id
+// UpdateProduct godoc
+// @Summary      Update product
+// @Description  Updates an existing product
+// @Tags         products
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string                 true  "Product ID"
+// @Param        request  body      UpdateProductRequest   true  "Updated product data"
+// @Success      200      {object}  models.Product
+// @Failure      400      {object}  errors.ProblemDetails  "Invalid input"
+// @Failure      404      {object}  errors.ProblemDetails  "Product not found"
+// @Failure      500      {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /products/{id} [put]
 func (c *ProductController) UpdateProduct(ctx context.WebContext) {
 	id := ctx.Param("id")
 
-	var request struct {
-		Name        string  `json:"name"`
-		Description string  `json:"description"`
-		Price       float64 `json:"price"`
-		Stock       int     `json:"stock"`
-	}
+	var request UpdateProductRequest
 
 	if err := ctx.BindJSON(&request); err != nil {
 		advisor.ReturnBadRequestError(ctx, err)
@@ -119,7 +166,15 @@ func (c *ProductController) UpdateProduct(ctx context.WebContext) {
 	ctx.JSON(http.StatusOK, product)
 }
 
-// DeleteProduct handles DELETE /products/:id
+// DeleteProduct godoc
+// @Summary      Delete product
+// @Description  Removes a product from the system
+// @Tags         products
+// @Param        id   path  string  true  "Product ID"
+// @Success      204  "No content"
+// @Failure      404  {object}  errors.ProblemDetails  "Product not found"
+// @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /products/{id} [delete]
 func (c *ProductController) DeleteProduct(ctx context.WebContext) {
 	id := ctx.Param("id")
 

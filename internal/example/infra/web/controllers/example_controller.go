@@ -19,6 +19,17 @@ func NewExampleController(getExampleUseCase usecases.GetExampleUseCase) *Example
 	}
 }
 
+// GetExample godoc
+// @Summary      Get example by ID
+// @Description  Retrieves a specific example entity from the database
+// @Tags         examples
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "Example ID (UUID format)"
+// @Success      200  {object}  usecases.GetExampleOutputDTO
+// @Failure      404  {object}  errors.ProblemDetails  "Example not found"
+// @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
+// @Router       /examples/{id} [get]
 func (controller *ExampleController) GetExample(c webcontext.WebContext) {
 	id := c.Param("id")
 
