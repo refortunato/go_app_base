@@ -1319,18 +1319,19 @@ EOF
     
     cat >> "$MODEL_FILE" <<EOF
 type ${ENTITY_NAME_CAPITALIZED} struct {
-	ID        string
+	ID        string    \`json:"id"\`
 EOF
     
     for field in "${FIELDS[@]}"; do
         field_name_pascal=$(echo "$field" | cut -d':' -f5)
+        field_name_snake=$(echo "$field" | cut -d':' -f1)
         field_type_go=$(echo "$field" | cut -d':' -f3)
-        echo "	${field_name_pascal} ${field_type_go}" >> "$MODEL_FILE"
+        echo "	${field_name_pascal} ${field_type_go} \`json:\"${field_name_snake}\"\`" >> "$MODEL_FILE"
     done
     
     cat >> "$MODEL_FILE" <<EOF
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time \`json:"created_at"\`
+	UpdatedAt time.Time \`json:"updated_at"\`
 }
 EOF
     
