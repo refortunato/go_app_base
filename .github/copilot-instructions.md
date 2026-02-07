@@ -75,6 +75,10 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
   - Exported types/functions: **PascalCase**.
   - Unexported variables/functions (local scope): **camelCase** (Go standard; do not use snake_case).
   - Package names: short, lowercase.
+- **JSON field naming convention**:
+  - All JSON tags in DTOs must use **camelCase** (e.g., `json:"razaoSocial"`).
+  - This applies to both input and output DTOs.
+  - Example: `RazaoSocial string \`json:"razaoSocial"\``
 
 ### Domain rules
 - If a struct has an **ID** and represents a business concept lifecycle, treat it as a **Domain Entity** and place it under `internal/{module}/core/domain/entities`.
@@ -85,6 +89,7 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
 - Each use case must have **its own** input/output DTOs:
   - `Execute(input InputDto) (OutputDto, error)`
   - Keep DTOs in the use case package (or a dedicated `dto` subpackage) and keep them flat.
+  - **All DTO fields must have JSON tags in camelCase** to ensure proper JSON binding/marshalling.
 - Use cases must depend only on:
   - domain types from the same module
   - repository interfaces in `internal/{module}/core/application/repositories`

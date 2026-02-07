@@ -669,8 +669,9 @@ EOF
     
     for field in "${FIELDS[@]}"; do
         field_name_pascal=$(echo "$field" | cut -d':' -f5)
+        field_name_camel=$(echo "$field" | cut -d':' -f4)
         field_type_go=$(echo "$field" | cut -d':' -f3)
-        echo "	${field_name_pascal} ${field_type_go}" >> "$CREATE_UC_FILE"
+        echo "	${field_name_pascal} ${field_type_go} \`json:\"${field_name_camel}\"\`" >> "$CREATE_UC_FILE"
     done
     
     cat >> "$CREATE_UC_FILE" <<EOF
@@ -731,7 +732,7 @@ EOF
 )
 
 type Get${ENTITY_NAME_CAPITALIZED}InputDTO struct {
-	Id string
+	Id string \`json:"id"\`
 }
 
 type Get${ENTITY_NAME_CAPITALIZED}OutputDTO struct {
@@ -740,14 +741,14 @@ EOF
     
     for field in "${FIELDS[@]}"; do
         field_name_pascal=$(echo "$field" | cut -d':' -f5)
+        field_name_camel=$(echo "$field" | cut -d':' -f4)
         field_type_go=$(echo "$field" | cut -d':' -f3)
-        json_tag=$(echo "$field" | cut -d':' -f1)
-        echo "	${field_name_pascal} ${field_type_go} \`json:\"${json_tag}\"\`" >> "$GET_UC_FILE"
+        echo "	${field_name_pascal} ${field_type_go} \`json:\"${field_name_camel}\"\`" >> "$GET_UC_FILE"
     done
     
     cat >> "$GET_UC_FILE" <<EOF
-	CreatedAt time.Time \`json:"created_at"\`
-	UpdatedAt time.Time \`json:"updated_at"\`
+	CreatedAt time.Time \`json:"createdAt"\`
+	UpdatedAt time.Time \`json:"updatedAt"\`
 }
 
 type Get${ENTITY_NAME_CAPITALIZED}UseCase struct {
@@ -804,8 +805,8 @@ EOF
 )
 
 type List${ENTITY_NAME_CAPITALIZED}InputDTO struct {
-	Page  int
-	Limit int
+	Page  int \`json:"page"\`
+	Limit int \`json:"limit"\`
 }
 
 type List${ENTITY_NAME_CAPITALIZED}ItemDTO struct {
@@ -814,14 +815,14 @@ EOF
     
     for field in "${FIELDS[@]}"; do
         field_name_pascal=$(echo "$field" | cut -d':' -f5)
+        field_name_camel=$(echo "$field" | cut -d':' -f4)
         field_type_go=$(echo "$field" | cut -d':' -f3)
-        json_tag=$(echo "$field" | cut -d':' -f1)
-        echo "	${field_name_pascal} ${field_type_go} \`json:\"${json_tag}\"\`" >> "$LIST_UC_FILE"
+        echo "	${field_name_pascal} ${field_type_go} \`json:\"${field_name_camel}\"\`" >> "$LIST_UC_FILE"
     done
     
     cat >> "$LIST_UC_FILE" <<EOF
-	CreatedAt time.Time \`json:"created_at"\`
-	UpdatedAt time.Time \`json:"updated_at"\`
+	CreatedAt time.Time \`json:"createdAt"\`
+	UpdatedAt time.Time \`json:"updatedAt"\`
 }
 
 type List${ENTITY_NAME_CAPITALIZED}OutputDTO struct {
@@ -901,13 +902,14 @@ EOF
 )
 
 type Update${ENTITY_NAME_CAPITALIZED}InputDTO struct {
-	Id string
+	Id string \`json:"id"\`
 EOF
     
     for field in "${FIELDS[@]}"; do
         field_name_pascal=$(echo "$field" | cut -d':' -f5)
+        field_name_camel=$(echo "$field" | cut -d':' -f4)
         field_type_go=$(echo "$field" | cut -d':' -f3)
-        echo "	${field_name_pascal} ${field_type_go}" >> "$UPDATE_UC_FILE"
+        echo "	${field_name_pascal} ${field_type_go} \`json:\"${field_name_camel}\"\`" >> "$UPDATE_UC_FILE"
     done
     
     cat >> "$UPDATE_UC_FILE" <<EOF
@@ -963,7 +965,7 @@ import (
 )
 
 type Delete${ENTITY_NAME_CAPITALIZED}InputDTO struct {
-	Id string
+	Id string \`json:"id"\`
 }
 
 type Delete${ENTITY_NAME_CAPITALIZED}OutputDTO struct {
