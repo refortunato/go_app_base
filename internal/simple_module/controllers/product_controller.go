@@ -48,7 +48,7 @@ type UpdateProductRequest struct {
 func (c *ProductController) GetProduct(ctx context.WebContext) {
 	id := ctx.Param("id")
 
-	product, err := c.service.GetProduct(id)
+	product, err := c.service.GetProduct(ctx.GetContext(), id)
 	if err != nil {
 		advisor.ReturnApplicationError(ctx, err)
 		return
@@ -79,7 +79,7 @@ func (c *ProductController) ListProducts(ctx context.WebContext) {
 		return
 	}
 
-	result, err := c.service.ListProducts(pagination.Page, pagination.Limit)
+	result, err := c.service.ListProducts(ctx.GetContext(), pagination.Page, pagination.Limit)
 	if err != nil {
 		advisor.ReturnApplicationError(ctx, err)
 		return
@@ -108,6 +108,7 @@ func (c *ProductController) CreateProduct(ctx context.WebContext) {
 	}
 
 	product, err := c.service.CreateProduct(
+		ctx.GetContext(),
 		request.Name,
 		request.Description,
 		request.Price,
@@ -145,6 +146,7 @@ func (c *ProductController) UpdateProduct(ctx context.WebContext) {
 	}
 
 	product, err := c.service.UpdateProduct(
+		ctx.GetContext(),
 		id,
 		request.Name,
 		request.Description,
@@ -171,7 +173,7 @@ func (c *ProductController) UpdateProduct(ctx context.WebContext) {
 func (c *ProductController) DeleteProduct(ctx context.WebContext) {
 	id := ctx.Param("id")
 
-	if err := c.service.DeleteProduct(id); err != nil {
+	if err := c.service.DeleteProduct(ctx.GetContext(), id); err != nil {
 		advisor.ReturnApplicationError(ctx, err)
 		return
 	}

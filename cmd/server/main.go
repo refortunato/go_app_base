@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,6 +12,7 @@ import (
 	"github.com/refortunato/go_app_base/cmd/server/container"
 	"github.com/refortunato/go_app_base/configs"
 	infraWeb "github.com/refortunato/go_app_base/internal/infra/web"
+	"github.com/refortunato/go_app_base/internal/shared/observability"
 	"github.com/refortunato/go_app_base/internal/shared/web/server"
 
 	// mysql
@@ -49,8 +51,21 @@ func main() {
 	}
 	defer db.Close()
 
+	// Initialize OpenTelemetry tracer provider
+	tracerProvider, err := observability.NewTracerProvider(cfg)
+	if err != nil {
+		log.Fatalf("Failed to initialize tracer provider: %v", err)
+	}
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := tracerProvider.Shutdown(ctx); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
 	// Initialize dependency container
-	c, err := container.New(db, cfg)
+	c, err := container.New(db, cfg, tracerProvider)
 	if err != nil {
 		panic(err)
 	}
@@ -73,7 +88,12 @@ func main() {
 	switch mode {
 	case "api":
 		fmt.Println("Starting API server...")
-		srv = server.NewGinServerWithRoutes(cfg.WebServerPort, infraWeb.RegisterRoutes(c))
+		srv = server.NewGinServerWithRoutes(
+			cfg.WebServerPort,
+			infraWeb.RegisterRoutes(c),
+			cfg.OtelServiceName,
+			cfg.OtelEnabled,
+		)
 
 		// Inicia o servidor em uma goroutine
 		go func() {

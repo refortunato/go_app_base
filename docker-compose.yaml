@@ -29,6 +29,36 @@ services:
       retries: 10
       start_period: 30s
 
+  # Jaeger - Distributed Tracing (OpenTelemetry compatible)
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    container_name: go_app_base_jaeger
+    restart: always
+    environment:
+      # Collector configuration
+      - COLLECTOR_OTLP_ENABLED=true
+      # Storage configuration (in-memory for development)
+      - SPAN_STORAGE_TYPE=memory
+    ports:
+      # Jaeger UI
+      - "16686:16686"
+      # OTLP gRPC receiver
+      - "4317:4317"
+      # OTLP HTTP receiver (used by app)
+      - "4318:4318"
+      # Jaeger Thrift HTTP
+      - "14268:14268"
+      # Jaeger Thrift Compact
+      - "6831:6831/udp"
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:14269/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   app-dev:
     build:
       context: .
@@ -40,6 +70,7 @@ services:
     platform: linux/amd64
     depends_on:
       - mysql
+      - jaeger
     ports:
       - 8080:8080
     volumes:
@@ -63,6 +94,7 @@ services:
     platform: linux/amd64
     depends_on:
       - mysql
+      - jaeger
     ports:
       - 8080:8080
     command: ["./server", "api"]
@@ -74,6 +106,10 @@ services:
       SERVER_APP_DB_PORT: 3306
       SERVER_APP_DB_DRIVER: mysql
       SERVER_APP_WEB_SERVER_PORT: 8080
+      # Observability
+      SERVER_APP_OTEL_ENABLED: "true"
+      SERVER_APP_OTEL_SERVICE_NAME: go_app_base
+      SERVER_APP_JAEGER_ENDPOINT: jaeger:4318
     networks:
       - app_network
 

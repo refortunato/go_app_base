@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"time"
 
 	"github.com/refortunato/go_app_base/internal/shared"
@@ -21,12 +22,12 @@ func NewProductService(repo *repositories.ProductRepository) *ProductService {
 }
 
 // GetProduct retrieves a product by ID
-func (s *ProductService) GetProduct(id string) (*models.Product, error) {
+func (s *ProductService) GetProduct(ctx context.Context, id string) (*models.Product, error) {
 	if id == "" {
 		return nil, errors.ErrProductIdRequired
 	}
 
-	product, err := s.repository.FindById(id)
+	product, err := s.repository.FindById(ctx, id)
 	if err != nil {
 		return nil, errors.ErrGeneric
 	}
@@ -45,7 +46,7 @@ type ListProductsResponse struct {
 }
 
 // ListProducts retrieves all products with pagination
-func (s *ProductService) ListProducts(page, limit int) (*ListProductsResponse, error) {
+func (s *ProductService) ListProducts(ctx context.Context, page, limit int) (*ListProductsResponse, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -57,13 +58,13 @@ func (s *ProductService) ListProducts(page, limit int) (*ListProductsResponse, e
 	offset := (page - 1) * limit
 
 	// Get total count
-	totalCount, err := s.repository.Count()
+	totalCount, err := s.repository.Count(ctx)
 	if err != nil {
 		return nil, errors.ErrGeneric
 	}
 
 	// Get products
-	products, err := s.repository.FindAll(limit, offset)
+	products, err := s.repository.FindAll(ctx, limit, offset)
 	if err != nil {
 		return nil, errors.ErrGeneric
 	}
@@ -78,7 +79,7 @@ func (s *ProductService) ListProducts(page, limit int) (*ListProductsResponse, e
 }
 
 // CreateProduct creates a new product
-func (s *ProductService) CreateProduct(name, description string, price float64, stock int) (*models.Product, error) {
+func (s *ProductService) CreateProduct(ctx context.Context, name, description string, price float64, stock int) (*models.Product, error) {
 	if name == "" {
 		return nil, errors.ErrProductNameRequired
 	}
@@ -100,7 +101,7 @@ func (s *ProductService) CreateProduct(name, description string, price float64, 
 		UpdatedAt:   now,
 	}
 
-	if err := s.repository.Save(product); err != nil {
+	if err := s.repository.Save(ctx, product); err != nil {
 		return nil, errors.ErrGeneric
 	}
 
@@ -108,12 +109,12 @@ func (s *ProductService) CreateProduct(name, description string, price float64, 
 }
 
 // UpdateProduct updates an existing product
-func (s *ProductService) UpdateProduct(id, name, description string, price float64, stock int) (*models.Product, error) {
+func (s *ProductService) UpdateProduct(ctx context.Context, id, name, description string, price float64, stock int) (*models.Product, error) {
 	if id == "" {
 		return nil, errors.ErrProductIdRequired
 	}
 
-	existing, err := s.repository.FindById(id)
+	existing, err := s.repository.FindById(ctx, id)
 	if err != nil {
 		return nil, errors.ErrGeneric
 	}
@@ -137,7 +138,7 @@ func (s *ProductService) UpdateProduct(id, name, description string, price float
 	existing.Stock = stock
 	existing.UpdatedAt = time.Now().UTC()
 
-	if err := s.repository.Update(existing); err != nil {
+	if err := s.repository.Update(ctx, existing); err != nil {
 		return nil, errors.ErrGeneric
 	}
 
@@ -145,12 +146,12 @@ func (s *ProductService) UpdateProduct(id, name, description string, price float
 }
 
 // DeleteProduct removes a product by ID
-func (s *ProductService) DeleteProduct(id string) error {
+func (s *ProductService) DeleteProduct(ctx context.Context, id string) error {
 	if id == "" {
 		return errors.ErrProductIdRequired
 	}
 
-	existing, err := s.repository.FindById(id)
+	existing, err := s.repository.FindById(ctx, id)
 	if err != nil {
 		return errors.ErrGeneric
 	}
@@ -158,7 +159,7 @@ func (s *ProductService) DeleteProduct(id string) error {
 		return errors.ErrProductNotFound
 	}
 
-	if err := s.repository.Delete(id); err != nil {
+	if err := s.repository.Delete(ctx, id); err != nil {
 		return errors.ErrGeneric
 	}
 

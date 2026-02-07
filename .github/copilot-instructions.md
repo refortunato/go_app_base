@@ -14,6 +14,31 @@ This repository is a Go application template built to serve as a **base for othe
   - `GET /health`: checks DB connectivity via a simple `SELECT 1`.
   - `Example` aggregate sample: domain entity + use case + repository + endpoint.
 
+## Docker-First Development Environment
+
+**CRITICAL**: This project follows a **Docker-first** approach. **ALL commands must run inside Docker containers**, not on the host machine.
+
+### Dependency Management
+- **NEVER** run `go get`, `go mod tidy`, or any Go commands directly on host
+- **ALWAYS** use Makefile commands that execute inside Docker containers:
+  - `make go-get DEPS='package1@version package2@version'` - Install Go dependencies
+  - `make go-mod-tidy` - Clean up go.mod and go.sum
+  - `make swagger` - Generate Swagger documentation
+
+### Docker Networking
+- Services communicate via **Docker network** using service names (not localhost)
+- Example: Application connects to MySQL at `mysql:3306`, not `localhost:3306`
+- Example: Application sends traces to Jaeger at `jaeger:4318`, not `localhost:4318`
+
+### Environment Variables
+- Configure hostnames for Docker environment in `.env` files
+- Use container service names (e.g., `SERVER_APP_DB_HOST=mysql`, `SERVER_APP_JAEGER_ENDPOINT=jaeger:4318`)
+
+### When Adding New Dependencies
+1. Use `make go-get DEPS='package@version'` to install
+2. Run `make go-mod-tidy` to clean up
+3. Rebuild containers with `make down && make dev`
+
 ## Repository layout (directory map)
 
 Use this map to decide where new code belongs. Prefer adding code in the correct layer instead of mixing concerns.

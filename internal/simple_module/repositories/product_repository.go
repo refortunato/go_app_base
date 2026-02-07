@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/refortunato/go_app_base/internal/simple_module/models"
@@ -17,7 +18,7 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 }
 
 // FindById retrieves a product by ID
-func (r *ProductRepository) FindById(id string) (*models.Product, error) {
+func (r *ProductRepository) FindById(ctx context.Context, id string) (*models.Product, error) {
 	query := `
 		SELECT id, name, description, price, stock, created_at, updated_at
 		FROM products
@@ -25,7 +26,7 @@ func (r *ProductRepository) FindById(id string) (*models.Product, error) {
 	`
 
 	var product models.Product
-	err := r.db.QueryRow(query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&product.ID,
 		&product.Name,
 		&product.Description,
@@ -46,7 +47,7 @@ func (r *ProductRepository) FindById(id string) (*models.Product, error) {
 }
 
 // FindAll retrieves all products with pagination
-func (r *ProductRepository) FindAll(limit, offset int) ([]*models.Product, error) {
+func (r *ProductRepository) FindAll(ctx context.Context, limit, offset int) ([]*models.Product, error) {
 	query := `
 		SELECT id, name, description, price, stock, created_at, updated_at
 		FROM products
@@ -54,7 +55,7 @@ func (r *ProductRepository) FindAll(limit, offset int) ([]*models.Product, error
 		LIMIT ? OFFSET ?
 	`
 
-	rows, err := r.db.Query(query, limit, offset)
+	rows, err := r.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -82,10 +83,10 @@ func (r *ProductRepository) FindAll(limit, offset int) ([]*models.Product, error
 }
 
 // Count returns the total number of products
-func (r *ProductRepository) Count() (int, error) {
+func (r *ProductRepository) Count(ctx context.Context) (int, error) {
 	query := `SELECT COUNT(*) FROM products`
 	var count int
-	err := r.db.QueryRow(query).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query).Scan(&count)
 	if err != nil {
 		return 0, err
 	}
@@ -93,13 +94,14 @@ func (r *ProductRepository) Count() (int, error) {
 }
 
 // Save creates a new product
-func (r *ProductRepository) Save(product *models.Product) error {
+func (r *ProductRepository) Save(ctx context.Context, product *models.Product) error {
 	query := `
 		INSERT INTO products (id, name, description, price, stock, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err := r.db.Exec(
+	_, err := r.db.ExecContext(
+		ctx,
 		query,
 		product.ID,
 		product.Name,
@@ -114,14 +116,15 @@ func (r *ProductRepository) Save(product *models.Product) error {
 }
 
 // Update modifies an existing product
-func (r *ProductRepository) Update(product *models.Product) error {
+func (r *ProductRepository) Update(ctx context.Context, product *models.Product) error {
 	query := `
 		UPDATE products
 		SET name = ?, description = ?, price = ?, stock = ?, updated_at = ?
 		WHERE id = ?
 	`
 
-	_, err := r.db.Exec(
+	_, err := r.db.ExecContext(
+		ctx,
 		query,
 		product.Name,
 		product.Description,
@@ -135,8 +138,8 @@ func (r *ProductRepository) Update(product *models.Product) error {
 }
 
 // Delete removes a product by ID
-func (r *ProductRepository) Delete(id string) error {
+func (r *ProductRepository) Delete(ctx context.Context, id string) error {
 	query := `DELETE FROM products WHERE id = ?`
-	_, err := r.db.Exec(query, id)
+	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }

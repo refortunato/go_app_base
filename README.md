@@ -179,7 +179,54 @@ make swagger
 📖 **[Swagger Authentication Setup](./docs/implementation/swagger-authentication.md)**  
 📖 **[Auto-Generated Swagger Documentation](./docs/implementation/auto-swagger-generation.md)**
 
-### Health Check
+## Observability
+
+This project includes **OpenTelemetry** instrumentation for distributed tracing using **Jaeger**.
+
+### Quick Start
+
+**Start with observability**:
+```sh
+make dev
+# Starts: MySQL + Application + Jaeger
+```
+
+**View traces**:
+```sh
+make jaeger-ui
+# Opens: http://localhost:16686
+```
+
+### Features
+
+✅ **Auto-instrumentation**:
+- HTTP requests (Gin middleware)
+- Database queries (MySQL wrapper)
+
+✅ **Custom spans** for business logic:
+- Use cases
+- Domain services
+- Critical operations
+
+✅ **Context propagation** (W3C Trace Context)
+
+### Configuration
+
+```env
+SERVER_APP_OTEL_ENABLED=true
+SERVER_APP_OTEL_SERVICE_NAME=go_app_base
+SERVER_APP_JAEGER_ENDPOINT=jaeger:4318
+```
+
+### Jaeger UI
+
+- **URL**: http://localhost:16686
+- **Service**: `go_app_base`
+- **Features**: Search traces, timeline view, span details, error tracking
+
+📖 **[Complete Observability Guide](./docs/implementation/observability-guide.md)**
+
+## API Endpoints
 ```http
 GET /health
 ```

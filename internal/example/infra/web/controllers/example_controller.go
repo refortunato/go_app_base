@@ -43,7 +43,9 @@ func (controller *ExampleController) GetExample(c webcontext.WebContext) {
 		Id: id,
 	}
 
-	output, err := controller.GetExampleUseCase.Execute(input)
+	// Pass context from request for trace propagation
+	ctx := c.GetContext()
+	output, err := controller.GetExampleUseCase.Execute(ctx, input)
 	if err != nil {
 		// Log error with custom context
 		logger.Error("Failed to get example", logger.CustomFields{
