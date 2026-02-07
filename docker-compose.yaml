@@ -41,7 +41,7 @@ services:
     depends_on:
       - mysql
     ports:
-      - 8081:8080
+      - 8080:8080
     volumes:
       - ./:/app
       # Cache do Go modules (acelera downloads)
@@ -64,7 +64,7 @@ services:
     depends_on:
       - mysql
     ports:
-      - 8081:8080
+      - 8080:8080
     command: ["./server", "api"]
     environment:
       SERVER_APP_DB_USER: root
