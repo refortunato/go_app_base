@@ -158,12 +158,26 @@ http://localhost:8080/swagger/index.html
 
 Interactive API documentation with **Swagger UI**. Test endpoints directly in your browser.
 
+**Authentication**:
+- **Development**: Open access (no authentication)
+- **Staging/Production**: Protected with Basic Authentication
+
+Configure via environment variables:
+```bash
+SERVER_APP_ENVIRONMENT=development|staging|production
+SERVER_APP_SWAGGER_ENABLED=true|false
+SERVER_APP_SWAGGER_USER=username
+SERVER_APP_SWAGGER_PASS=password
+```
+
 **Generate/Update documentation**:
 ```sh
 make swagger
 ```
 
-📖 **[Complete Swagger Guide](./docs/implementation/swagger-guide.md)**
+📖 **[Complete Swagger Guide](./docs/implementation/swagger-guide.md)**  
+📖 **[Swagger Authentication Setup](./docs/implementation/swagger-authentication.md)**  
+📖 **[Auto-Generated Swagger Documentation](./docs/implementation/auto-swagger-generation.md)**
 
 ### Health Check
 ```http

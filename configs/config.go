@@ -12,6 +12,7 @@ type Conf struct {
 	AppName              string `mapstructure:"SERVER_APP_NAME"`
 	ImageName            string `mapstructure:"SERVER_APP_IMAGE_NAME"`
 	ImageVersion         string `mapstructure:"SERVER_APP_IMAGE_VERSION"`
+	Environment          string `mapstructure:"SERVER_APP_ENVIRONMENT"`
 	DBDriver             string `mapstructure:"SERVER_APP_DB_DRIVER"`
 	DBHost               string `mapstructure:"SERVER_APP_DB_HOST"`
 	DBPort               string `mapstructure:"SERVER_APP_DB_PORT"`
@@ -24,6 +25,9 @@ type Conf struct {
 	DBConnMaxIdleTime    int    `mapstructure:"SERVER_APP_DB_CONN_MAX_IDLE_TIME"` // in minutes
 	WebServerPort        string `mapstructure:"SERVER_APP_WEB_SERVER_PORT"`
 	DebugMode            bool   `mapstructure:"SERVER_APP_DEBUG_MODE"`
+	SwaggerEnabled       bool   `mapstructure:"SERVER_APP_SWAGGER_ENABLED"`
+	SwaggerUser          string `mapstructure:"SERVER_APP_SWAGGER_USER"`
+	SwaggerPass          string `mapstructure:"SERVER_APP_SWAGGER_PASS"`
 }
 
 func LoadConfig(path string) (*Conf, error) {
@@ -38,6 +42,7 @@ func LoadConfig(path string) (*Conf, error) {
 		AppName:              getEnv("SERVER_APP_NAME", "go_app_base"),
 		ImageName:            getEnv("SERVER_APP_IMAGE_NAME", ""),
 		ImageVersion:         getEnv("SERVER_APP_IMAGE_VERSION", ""),
+		Environment:          getEnv("SERVER_APP_ENVIRONMENT", "development"),
 		WebServerPort:        getEnv("SERVER_APP_WEB_SERVER_PORT", "8080"),
 		DBDriver:             getEnv("SERVER_APP_DB_DRIVER", "mysql"),
 		DBHost:               getEnv("SERVER_APP_DB_HOST", "localhost"),
@@ -50,6 +55,9 @@ func LoadConfig(path string) (*Conf, error) {
 		DBConnMaxLifetime:    getEnvAsInt("SERVER_APP_DB_CONN_MAX_LIFETIME", 1),
 		DBConnMaxIdleTime:    getEnvAsInt("SERVER_APP_DB_CONN_MAX_IDLE_TIME", 10),
 		DebugMode:            getEnvAsBool("SERVER_APP_DEBUG_MODE", false),
+		SwaggerEnabled:       getEnvAsBool("SERVER_APP_SWAGGER_ENABLED", true),
+		SwaggerUser:          getEnv("SERVER_APP_SWAGGER_USER", ""),
+		SwaggerPass:          getEnv("SERVER_APP_SWAGGER_PASS", ""),
 	}
 
 	return cfg, nil

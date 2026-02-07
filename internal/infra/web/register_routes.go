@@ -8,6 +8,7 @@ import (
 	"github.com/refortunato/go_app_base/cmd/server/container"
 	exampleWeb "github.com/refortunato/go_app_base/internal/example/infra/web"
 	healthWeb "github.com/refortunato/go_app_base/internal/health/infra/web"
+	"github.com/refortunato/go_app_base/internal/shared/web/middleware"
 	"github.com/refortunato/go_app_base/internal/simple_module"
 )
 
@@ -15,8 +16,10 @@ import (
 // It delegates route registration to each module
 func RegisterRoutes(c *container.Container) func(*gin.Engine) {
 	return func(router *gin.Engine) {
-		// Swagger documentation
-		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		// Swagger documentation with authentication middleware
+		swaggerGroup := router.Group("/swagger")
+		swaggerGroup.Use(middleware.SwaggerBasicAuth())
+		swaggerGroup.GET("/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 		// Register routes for each module
 		healthWeb.RegisterRoutes(router, c.HealthModule)
