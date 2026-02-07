@@ -58,6 +58,7 @@ internal/{module}/
 ├── repositories/     # Database access
 ├── services/         # Business logic
 ├── controllers/      # HTTP handlers
+├── errors/           # Module-specific errors (ProblemDetails)
 ├── routes.go         # Route definitions
 └── module.go         # Dependency wiring
 ```
@@ -157,6 +158,7 @@ Enter your choice (1 or 2): 1
   - repositories/ - Database access
   - services/     - Business logic
   - controllers/  - HTTP handlers
+  - errors/       - Module-specific errors
 ```
 
 ### Example 2: Creating a Payment Module (DDD)
@@ -196,8 +198,9 @@ After creating a module, you need to:
 
 **For 4-tier:**
 - Define models in `models/`
+- Define module-specific errors in `errors/`
 - Implement repositories in `repositories/`
-- Create services in `services/`
+- Create services in `services/` (using structured errors)
 - Add controllers in `controllers/`
 
 **For DDD:**
@@ -315,6 +318,106 @@ Each module is designed to be:
 3. **Wire all dependencies**: Use the module factory pattern
 4. **Register routes properly**: Each module registers its own routes
 5. **Follow naming conventions**: Consistent names across the project
+6. **Use structured errors**: Define module-specific errors in `errors/` package using `ProblemDetails`
+
+## Error Handling (4-tier Architecture)
+
+The script automatically creates an `errors/` directory with a base error file containing:
+
+### Module-Specific Errors
+
+Each module should define its own errors following the pattern:
+
+```go
+package errors
+
+import (
+	sharedErrors "github.com/company/myapp/internal/shared/errors"
+)
+
+var (
+	// Entity-specific errors
+	ErrUserIdRequired = sharedErrors.NewProblemDetails(
+		400,
+		"Invalid user ID",
+		"User ID is required",
+		"US1001",  // Error code: Module prefix + sequence
+		sharedErrors.ErrorContextBusiness,
+	)
+	ErrUserNotFound = sharedErrors.NewProblemDetails(
+		404,
+		"User not found",
+		"The requested user was not found",
+		"US1002",
+		sharedErrors.ErrorContextBusiness,
+	)
+	
+	// Generic errors
+	ErrGeneric = sharedErrors.NewProblemDetails(
+		500,
+		"Internal server error",
+		"An unexpected error occurred",
+		"US9999",
+		sharedErrors.ErrorContextTechnical,
+	)
+)
+```
+
+### Using Errors in Services
+
+Services should use structured errors instead of `fmt.Errorf`:
+
+**❌ Don't do this:**
+```go
+func (s *UserService) GetUser(id string) (*models.User, error) {
+	if id == "" {
+		return nil, fmt.Errorf("user ID is required")  // Generic error
+	}
+	// ...
+}
+```
+
+**✅ Do this:**
+```go
+func (s *UserService) GetUser(id string) (*models.User, error) {
+	if id == "" {
+		return nil, errors.ErrUserIdRequired  // Structured error
+	}
+	
+	user, err := s.repository.FindById(id)
+	if err != nil {
+		return nil, errors.ErrGeneric  // Technical error
+	}
+	
+	if user == nil {
+		return nil, errors.ErrUserNotFound  // Business error
+	}
+	
+	return user, nil
+}
+```
+
+### Error Code Convention
+
+Error codes follow this pattern: `[MODULE_PREFIX][ENTITY_PREFIX][SEQUENCE]`
+
+- **Module Prefix**: First 2 letters of module name (uppercase)
+- **Entity Prefix**: First letter of entity name (uppercase)
+- **Sequence**: 4 digits (1001-8999 for business errors, 9999 for generic)
+
+**Examples:**
+- User module, User entity: `US1001`, `US1002`, ..., `US9999`
+- Order module, Product entity: `ORP1001`, `ORP1002`, ...
+- Payment module, Transaction entity: `PAT1001`, `PAT1002`, ...
+
+### Benefits
+
+1. **Consistent error responses**: All errors follow RFC 7807 (Problem Details)
+2. **Better debugging**: Unique error codes for tracking
+3. **Client-friendly**: Structured JSON errors with helpful messages
+4. **Type safety**: Compile-time checking of errors
+5. **Internationalization ready**: Error messages can be translated based on codes
+
 
 ## Troubleshooting
 

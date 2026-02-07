@@ -1,10 +1,10 @@
 package services
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/refortunato/go_app_base/internal/shared"
+	"github.com/refortunato/go_app_base/internal/simple_module/errors"
 	"github.com/refortunato/go_app_base/internal/simple_module/models"
 	"github.com/refortunato/go_app_base/internal/simple_module/repositories"
 )
@@ -22,16 +22,16 @@ func NewProductService(repo *repositories.ProductRepository) *ProductService {
 // GetProduct retrieves a product by ID
 func (s *ProductService) GetProduct(id string) (*models.Product, error) {
 	if id == "" {
-		return nil, fmt.Errorf("product ID is required")
+		return nil, errors.ErrProductIdRequired
 	}
 
 	product, err := s.repository.FindById(id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get product: %w", err)
+		return nil, errors.ErrGeneric
 	}
 
 	if product == nil {
-		return nil, fmt.Errorf("product not found")
+		return nil, errors.ErrProductNotFound
 	}
 
 	return product, nil
@@ -48,7 +48,7 @@ func (s *ProductService) ListProducts(limit, offset int) ([]*models.Product, err
 
 	products, err := s.repository.FindAll(limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list products: %w", err)
+		return nil, errors.ErrGeneric
 	}
 
 	return products, nil
@@ -57,13 +57,13 @@ func (s *ProductService) ListProducts(limit, offset int) ([]*models.Product, err
 // CreateProduct creates a new product
 func (s *ProductService) CreateProduct(name, description string, price float64, stock int) (*models.Product, error) {
 	if name == "" {
-		return nil, fmt.Errorf("product name is required")
+		return nil, errors.ErrProductNameRequired
 	}
 	if price < 0 {
-		return nil, fmt.Errorf("price cannot be negative")
+		return nil, errors.ErrProductPriceInvalid
 	}
 	if stock < 0 {
-		return nil, fmt.Errorf("stock cannot be negative")
+		return nil, errors.ErrProductStockInvalid
 	}
 
 	now := time.Now().UTC()
@@ -78,7 +78,7 @@ func (s *ProductService) CreateProduct(name, description string, price float64, 
 	}
 
 	if err := s.repository.Save(product); err != nil {
-		return nil, fmt.Errorf("failed to create product: %w", err)
+		return nil, errors.ErrGeneric
 	}
 
 	return product, nil
@@ -87,25 +87,25 @@ func (s *ProductService) CreateProduct(name, description string, price float64, 
 // UpdateProduct updates an existing product
 func (s *ProductService) UpdateProduct(id, name, description string, price float64, stock int) (*models.Product, error) {
 	if id == "" {
-		return nil, fmt.Errorf("product ID is required")
+		return nil, errors.ErrProductIdRequired
 	}
 
 	existing, err := s.repository.FindById(id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get product: %w", err)
+		return nil, errors.ErrGeneric
 	}
 	if existing == nil {
-		return nil, fmt.Errorf("product not found")
+		return nil, errors.ErrProductNotFound
 	}
 
 	if name == "" {
-		return nil, fmt.Errorf("product name is required")
+		return nil, errors.ErrProductNameRequired
 	}
 	if price < 0 {
-		return nil, fmt.Errorf("price cannot be negative")
+		return nil, errors.ErrProductPriceInvalid
 	}
 	if stock < 0 {
-		return nil, fmt.Errorf("stock cannot be negative")
+		return nil, errors.ErrProductStockInvalid
 	}
 
 	existing.Name = name
@@ -115,7 +115,7 @@ func (s *ProductService) UpdateProduct(id, name, description string, price float
 	existing.UpdatedAt = time.Now().UTC()
 
 	if err := s.repository.Update(existing); err != nil {
-		return nil, fmt.Errorf("failed to update product: %w", err)
+		return nil, errors.ErrGeneric
 	}
 
 	return existing, nil
@@ -124,19 +124,19 @@ func (s *ProductService) UpdateProduct(id, name, description string, price float
 // DeleteProduct removes a product by ID
 func (s *ProductService) DeleteProduct(id string) error {
 	if id == "" {
-		return fmt.Errorf("product ID is required")
+		return errors.ErrProductIdRequired
 	}
 
 	existing, err := s.repository.FindById(id)
 	if err != nil {
-		return fmt.Errorf("failed to get product: %w", err)
+		return errors.ErrGeneric
 	}
 	if existing == nil {
-		return fmt.Errorf("product not found")
+		return errors.ErrProductNotFound
 	}
 
 	if err := s.repository.Delete(id); err != nil {
-		return fmt.Errorf("failed to delete product: %w", err)
+		return errors.ErrGeneric
 	}
 
 	return nil

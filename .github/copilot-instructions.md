@@ -139,6 +139,75 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
   - Always use the prefix `SERVER_APP_...`.
   - Update configuration mapping in `configs/config.go`.
 
+### Error handling
+- **All modules (both DDD and 4-tier) must use structured errors** via `ProblemDetails` (RFC 7807).
+- **Never use `fmt.Errorf` for business errors** - define specific errors in `errors/` package.
+- **4-tier modules**: errors go in `internal/{module}/errors/{module}_errors.go`
+- **DDD modules**: errors go in `internal/{module}/core/domain/errors/{entity}_errors.go`
+
+#### Error pattern (4-tier):
+```go
+package errors
+
+import (
+	sharedErrors "github.com/refortunato/go_app_base/internal/shared/errors"
+)
+
+var (
+	// Entity-specific errors
+	ErrEntityIdRequired = sharedErrors.NewProblemDetails(
+		400,
+		"Invalid entity ID",
+		"Entity ID is required",
+		"MOD1001",  // Error code: Module prefix + sequence
+		sharedErrors.ErrorContextBusiness,
+	)
+	ErrEntityNotFound = sharedErrors.NewProblemDetails(
+		404,
+		"Entity not found",
+		"The requested entity was not found",
+		"MOD1002",
+		sharedErrors.ErrorContextBusiness,
+	)
+	
+	// Generic errors
+	ErrGeneric = sharedErrors.NewProblemDetails(
+		500,
+		"Internal server error",
+		"An unexpected error occurred",
+		"MOD9999",
+		sharedErrors.ErrorContextInfra,
+	)
+)
+```
+
+#### Error code convention:
+- Format: `[MODULE_PREFIX][ENTITY_PREFIX][SEQUENCE]`
+- Module Prefix: First 2 letters uppercase (e.g., `US` for user, `OR` for order)
+- Entity Prefix: First letter of entity uppercase (e.g., `P` for Product)
+- Sequence: 1001-8999 for business errors, 9999 for generic
+- Examples: `USP1001` (User module, Product entity), `ORT1001` (Order module, Transaction entity)
+
+#### Usage in services (4-tier):
+```go
+func (s *ProductService) GetProduct(id string) (*models.Product, error) {
+	if id == "" {
+		return nil, errors.ErrProductIdRequired  // ✅ Structured error
+	}
+	
+	product, err := s.repository.FindById(id)
+	if err != nil {
+		return nil, errors.ErrGeneric  // ✅ Technical error
+	}
+	
+	if product == nil {
+		return nil, errors.ErrProductNotFound  // ✅ Business error
+	}
+	
+	return product, nil
+}
+```
+
 ## Architecture patterns and principles
 
 ### Multiple architecture styles supported
@@ -181,6 +250,7 @@ internal/{module}/
   ├── repositories/ # Database access
   ├── services/     # Business logic and validations
   ├── controllers/  # HTTP handlers
+  ├── errors/       # Module-specific errors (ProblemDetails)
   ├── routes.go     # Route definitions
   └── module.go     # Dependency wiring
 ```
@@ -191,6 +261,7 @@ internal/{module}/
 - **Both patterns maintain module independence**
 - **Both use the same factory pattern** (`module.go`)
 - **Both register routes the same way** (`routes.go`)
+- **Both use structured error handling** (`errors/` package)
 - Choose based on **domain complexity**, not preference
 
 ### Separation of concerns (shared vs infra)

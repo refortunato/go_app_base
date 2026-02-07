@@ -1243,6 +1243,66 @@ else
     # ==================== 4-TIER ARCHITECTURE ====================
     print_info "Generating 4-tier structure..."
     
+    # Generate error code prefix (first 2 letters uppercase + first letter of entity)
+    MODULE_PREFIX=$(echo "${MODULE_NAME:0:2}" | tr '[:lower:]' '[:upper:]')
+    ENTITY_PREFIX=$(echo "${ENTITY_NAME:0:1}" | tr '[:lower:]' '[:upper:]')
+    ERROR_CODE_PREFIX="${MODULE_PREFIX}${ENTITY_PREFIX}"
+    
+    # ==================== 0. Update/Create Module Errors ====================
+    print_info "Updating module errors..."
+    
+    ERRORS_FILE="$MODULE_DIR/errors/${MODULE_NAME}_errors.go"
+    
+    # Check if errors file exists, if not create it
+    if [ ! -f "$ERRORS_FILE" ]; then
+        cat > "$ERRORS_FILE" <<EOF
+package errors
+
+import (
+	sharedErrors "${MODULE_PATH}/internal/shared/errors"
+)
+
+var (
+	// Generic errors
+	ErrGeneric = sharedErrors.NewProblemDetails(
+		500,
+		"Internal server error",
+		"An unexpected error occurred",
+		"${ERROR_CODE_PREFIX}9999",
+		sharedErrors.ErrorContextTechnical,
+	)
+)
+EOF
+    fi
+    
+    # Add entity-specific errors to the file
+    # Check if errors already exist for this entity
+    if ! grep -q "Err${ENTITY_NAME_CAPITALIZED}NotFound" "$ERRORS_FILE"; then
+        # Insert errors before the closing parenthesis
+        sed -i.bak "/^var (/a\\
+\\
+	// ${ENTITY_NAME_CAPITALIZED} errors\\
+	Err${ENTITY_NAME_CAPITALIZED}IdRequired = sharedErrors.NewProblemDetails(\\
+		400,\\
+		\"Invalid ${ENTITY_NAME_LOWER} ID\",\\
+		\"${ENTITY_NAME_CAPITALIZED} ID is required\",\\
+		\"${ERROR_CODE_PREFIX}1001\",\\
+		sharedErrors.ErrorContextBusiness,\\
+	)\\
+	Err${ENTITY_NAME_CAPITALIZED}NotFound = sharedErrors.NewProblemDetails(\\
+		404,\\
+		\"${ENTITY_NAME_CAPITALIZED} not found\",\\
+		\"The requested ${ENTITY_NAME_LOWER} was not found\",\\
+		\"${ERROR_CODE_PREFIX}1002\",\\
+		sharedErrors.ErrorContextBusiness,\\
+	)
+" "$ERRORS_FILE"
+        rm -f "${ERRORS_FILE}.bak"
+        print_success "Added ${ENTITY_NAME_CAPITALIZED} errors to errors file"
+    else
+        print_warning "${ENTITY_NAME_CAPITALIZED} errors already exist in errors file"
+    fi
+    
     # ==================== 1. Create Model ====================
     print_info "Creating model..."
     
@@ -1490,7 +1550,6 @@ EOF
 package services
 
 import (
-	"fmt"
 EOF
     
     if [ "$HAS_TIME_FIELD" = true ]; then
@@ -1500,6 +1559,7 @@ EOF
     
     cat >> "$SERVICE_FILE" <<EOF
 	"${MODULE_PATH}/internal/shared"
+	"${MODULE_PATH}/internal/${MODULE_NAME}/errors"
 	"${MODULE_PATH}/internal/${MODULE_NAME}/models"
 	"${MODULE_PATH}/internal/${MODULE_NAME}/repositories"
 )
@@ -1514,16 +1574,16 @@ func New${ENTITY_NAME_CAPITALIZED}Service(repo *repositories.${ENTITY_NAME_CAPIT
 
 func (s *${ENTITY_NAME_CAPITALIZED}Service) Get${ENTITY_NAME_CAPITALIZED}(id string) (*models.${ENTITY_NAME_CAPITALIZED}, error) {
 	if id == "" {
-		return nil, fmt.Errorf("id is required")
+		return nil, errors.Err${ENTITY_NAME_CAPITALIZED}IdRequired
 	}
 
 	entity, err := s.repository.FindById(id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get ${ENTITY_NAME_LOWER}: %w", err)
+		return nil, errors.ErrGeneric
 	}
 
 	if entity == nil {
-		return nil, fmt.Errorf("${ENTITY_NAME_LOWER} not found")
+		return nil, errors.Err${ENTITY_NAME_CAPITALIZED}NotFound
 	}
 
 	return entity, nil
@@ -1536,13 +1596,13 @@ func (s *${ENTITY_NAME_CAPITALIZED}Service) List${ENTITY_NAME_CAPITALIZED}s(page
 	// Get total count
 	totalCount, err := s.repository.Count()
 	if err != nil {
-		return nil, fmt.Errorf("failed to count ${ENTITY_NAME_LOWER}s: %w", err)
+		return nil, errors.ErrGeneric
 	}
 
 	// Get entities
 	entities, err := s.repository.FindAll(limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list ${ENTITY_NAME_LOWER}s: %w", err)
+		return nil, errors.ErrGeneric
 	}
 
 	// Calculate total pages
@@ -1592,7 +1652,7 @@ EOF
 	}
 
 	if err := s.repository.Save(entity); err != nil {
-		return nil, fmt.Errorf("failed to create ${ENTITY_NAME_LOWER}: %w", err)
+		return nil, errors.ErrGeneric
 	}
 
 	return entity, nil
@@ -1611,15 +1671,15 @@ EOF
     cat >> "$SERVICE_FILE" <<EOF
 ) (*models.${ENTITY_NAME_CAPITALIZED}, error) {
 	if id == "" {
-		return nil, fmt.Errorf("id is required")
+		return nil, errors.Err${ENTITY_NAME_CAPITALIZED}IdRequired
 	}
 
 	existing, err := s.repository.FindById(id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get ${ENTITY_NAME_LOWER}: %w", err)
+		return nil, errors.ErrGeneric
 	}
 	if existing == nil {
-		return nil, fmt.Errorf("${ENTITY_NAME_LOWER} not found")
+		return nil, errors.Err${ENTITY_NAME_CAPITALIZED}NotFound
 	}
 
 	// TODO: Add validation logic here
@@ -1636,7 +1696,7 @@ EOF
 	existing.UpdatedAt = time.Now().UTC()
 
 	if err := s.repository.Update(existing); err != nil {
-		return nil, fmt.Errorf("failed to update ${ENTITY_NAME_LOWER}: %w", err)
+		return nil, errors.ErrGeneric
 	}
 
 	return existing, nil
@@ -1644,11 +1704,11 @@ EOF
 
 func (s *${ENTITY_NAME_CAPITALIZED}Service) Delete${ENTITY_NAME_CAPITALIZED}(id string) error {
 	if id == "" {
-		return fmt.Errorf("id is required")
+		return errors.Err${ENTITY_NAME_CAPITALIZED}IdRequired
 	}
 
 	if err := s.repository.Delete(id); err != nil {
-		return fmt.Errorf("failed to delete ${ENTITY_NAME_LOWER}: %w", err)
+		return errors.ErrGeneric
 	}
 
 	return nil

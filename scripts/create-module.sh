@@ -93,8 +93,48 @@ if [ "$ARCH_TYPE" = "1" ]; then
     mkdir -p "$MODULE_DIR/repositories"
     mkdir -p "$MODULE_DIR/services"
     mkdir -p "$MODULE_DIR/controllers"
+    mkdir -p "$MODULE_DIR/errors"
     
     print_success "Created directory structure"
+    
+    # Create errors file
+    cat > "$MODULE_DIR/errors/${MODULE_NAME}_errors.go" <<EOF
+package errors
+
+import (
+	sharedErrors "${MODULE_PATH}/internal/shared/errors"
+)
+
+var (
+	// Add your module-specific errors here
+	// Example:
+	// ErrInvalidInput = sharedErrors.NewProblemDetails(
+	//     400,
+	//     "Invalid input",
+	//     "The provided input is invalid",
+	//     "MOD1001",
+	//     sharedErrors.ErrorContextBusiness,
+	// )
+	// ErrNotFound = sharedErrors.NewProblemDetails(
+	//     404,
+	//     "${MODULE_NAME_CAPITALIZED} not found",
+	//     "The requested ${MODULE_NAME} was not found",
+	//     "MOD1002",
+	//     sharedErrors.ErrorContextBusiness,
+	// )
+	
+	// Generic errors
+	ErrGeneric = sharedErrors.NewProblemDetails(
+		500,
+		"Internal server error",
+		"An unexpected error occurred",
+		"MOD9999",
+		sharedErrors.ErrorContextInfra,
+	)
+)
+EOF
+    
+    print_success "Created errors/${MODULE_NAME}_errors.go"
     
     # Create module.go
     cat > "$MODULE_DIR/module.go" <<EOF
@@ -348,6 +388,7 @@ if [ "$ARCH_TYPE" = "1" ]; then
     echo "  - repositories/ - Database access"
     echo "  - services/     - Business logic"
     echo "  - controllers/  - HTTP handlers"
+    echo "  - errors/       - Module-specific errors"
 else
     print_info "Module location: internal/${MODULE_NAME}/"
     print_info "Architecture: DDD (Clean Architecture)"
