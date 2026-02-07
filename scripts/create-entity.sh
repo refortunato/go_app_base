@@ -1560,8 +1560,7 @@ EOF
     
     cat >> "$SERVICE_FILE" <<EOF
 	"${MODULE_PATH}/internal/shared"
-	"${MODULE_PATH}/internal/${MODULE_NAME}/errors"
-	"${MODULE_PATH}/internal/${MODULE_NAME}/models"
+	"${MODULE_PATH}/internal/shared/dto"
 	"${MODULE_PATH}/internal/${MODULE_NAME}/repositories"
 )
 
@@ -1590,7 +1589,12 @@ func (s *${ENTITY_NAME_CAPITALIZED}Service) Get${ENTITY_NAME_CAPITALIZED}(id str
 	return entity, nil
 }
 
-func (s *${ENTITY_NAME_CAPITALIZED}Service) List${ENTITY_NAME_CAPITALIZED}s(page, limit int) (map[string]interface{}, error) {
+type List${ENTITY_NAME_CAPITALIZED}Response struct {
+	Items      []*models.${ENTITY_NAME_CAPITALIZED} \`json:"items"\`
+	Pagination *dto.PaginationResponseDTO \`json:"pagination"\`
+}
+
+func (s *${ENTITY_NAME_CAPITALIZED}Service) List${ENTITY_NAME_CAPITALIZED}s(page, limit int) (*List${ENTITY_NAME_CAPITALIZED}Response, error) {
 	// Calculate offset
 	offset := (page - 1) * limit
 
@@ -1606,20 +1610,12 @@ func (s *${ENTITY_NAME_CAPITALIZED}Service) List${ENTITY_NAME_CAPITALIZED}s(page
 		return nil, errors.ErrGeneric
 	}
 
-	// Calculate total pages
-	totalPages := 0
-	if totalCount > 0 {
-		totalPages = (totalCount + limit - 1) / limit
-	}
+	// Build pagination
+	pagination := dto.NewPaginationResponseDTO(page, limit, totalCount)
 
-	return map[string]interface{}{
-		"items": entities,
-		"pagination": map[string]int{
-			"page":        page,
-			"limit":       limit,
-			"total_items": totalCount,
-			"total_pages": totalPages,
-		},
+	return &List${ENTITY_NAME_CAPITALIZED}Response{
+		Items:      entities,
+		Pagination: pagination,
 	}, nil
 }
 
@@ -1773,7 +1769,7 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) Get(ctx context.WebContext) {
 // @Produce      json
 // @Param        page   query     int  false  "Page number" default(1)
 // @Param        limit  query     int  false  "Items per page" default(10)
-// @Success      200    {object}  dto.PaginatedResponse
+// @Success      200    {object}  services.List${ENTITY_NAME_CAPITALIZED}Response
 // @Failure      400    {object}  errors.ProblemDetails  "Invalid pagination parameters"
 // @Failure      500    {object}  errors.ProblemDetails  "Internal server error"
 // @Router       /${ENTITY_NAME_LOWER}s [get]

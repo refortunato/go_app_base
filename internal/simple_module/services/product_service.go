@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/refortunato/go_app_base/internal/shared"
+	"github.com/refortunato/go_app_base/internal/shared/dto"
 	"github.com/refortunato/go_app_base/internal/simple_module/errors"
 	"github.com/refortunato/go_app_base/internal/simple_module/models"
 	"github.com/refortunato/go_app_base/internal/simple_module/repositories"
@@ -37,21 +38,43 @@ func (s *ProductService) GetProduct(id string) (*models.Product, error) {
 	return product, nil
 }
 
+// ListProductsResponse represents the paginated list of products
+type ListProductsResponse struct {
+	Items      []*models.Product          `json:"items"`
+	Pagination *dto.PaginationResponseDTO `json:"pagination"`
+}
+
 // ListProducts retrieves all products with pagination
-func (s *ProductService) ListProducts(limit, offset int) ([]*models.Product, error) {
+func (s *ProductService) ListProducts(page, limit int) (*ListProductsResponse, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-	if offset < 0 {
-		offset = 0
+	if page <= 0 {
+		page = 1
 	}
 
+	// Calculate offset
+	offset := (page - 1) * limit
+
+	// Get total count
+	totalCount, err := s.repository.Count()
+	if err != nil {
+		return nil, errors.ErrGeneric
+	}
+
+	// Get products
 	products, err := s.repository.FindAll(limit, offset)
 	if err != nil {
 		return nil, errors.ErrGeneric
 	}
 
-	return products, nil
+	// Build pagination
+	pagination := dto.NewPaginationResponseDTO(page, limit, totalCount)
+
+	return &ListProductsResponse{
+		Items:      products,
+		Pagination: pagination,
+	}, nil
 }
 
 // CreateProduct creates a new product

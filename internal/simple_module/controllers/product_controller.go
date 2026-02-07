@@ -64,7 +64,7 @@ func (c *ProductController) GetProduct(ctx context.WebContext) {
 // @Produce      json
 // @Param        page   query  int  false  "Page number" default(1)
 // @Param        limit  query  int  false  "Items per page" default(10)
-// @Success      200    {object}  map[string]interface{}  "Paginated product list"
+// @Success      200    {object}  services.ListProductsResponse
 // @Failure      400    {object}  errors.ProblemDetails   "Invalid pagination parameters"
 // @Failure      500    {object}  errors.ProblemDetails   "Internal server error"
 // @Router       /products [get]
@@ -79,20 +79,13 @@ func (c *ProductController) ListProducts(ctx context.WebContext) {
 		return
 	}
 
-	products, err := c.service.ListProducts(pagination.Limit, pagination.Offset)
+	result, err := c.service.ListProducts(pagination.Page, pagination.Limit)
 	if err != nil {
 		advisor.ReturnApplicationError(ctx, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, map[string]interface{}{
-		"data": products,
-		"pagination": map[string]int{
-			"page":   pagination.Page,
-			"limit":  pagination.Limit,
-			"offset": pagination.Offset,
-		},
-	})
+	ctx.JSON(http.StatusOK, result)
 }
 
 // CreateProduct godoc

@@ -81,6 +81,17 @@ func (r *ProductRepository) FindAll(limit, offset int) ([]*models.Product, error
 	return products, nil
 }
 
+// Count returns the total number of products
+func (r *ProductRepository) Count() (int, error) {
+	query := `SELECT COUNT(*) FROM products`
+	var count int
+	err := r.db.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 // Save creates a new product
 func (r *ProductRepository) Save(product *models.Product) error {
 	query := `
