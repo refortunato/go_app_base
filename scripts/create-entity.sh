@@ -1551,16 +1551,12 @@ EOF
 package services
 
 import (
-EOF
-    
-    if [ "$HAS_TIME_FIELD" = true ]; then
-        echo '	"time"' >> "$SERVICE_FILE"
-        echo '' >> "$SERVICE_FILE"
-    fi
-    
-    cat >> "$SERVICE_FILE" <<EOF
+	"time"
+
 	"${MODULE_PATH}/internal/shared"
 	"${MODULE_PATH}/internal/shared/dto"
+	"${MODULE_PATH}/internal/${MODULE_NAME}/errors"
+	"${MODULE_PATH}/internal/${MODULE_NAME}/models"
 	"${MODULE_PATH}/internal/${MODULE_NAME}/repositories"
 )
 
