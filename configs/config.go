@@ -33,10 +33,11 @@ type Conf struct {
 	OtelServiceName string `mapstructure:"SERVER_APP_OTEL_SERVICE_NAME"`
 	JaegerEndpoint  string `mapstructure:"SERVER_APP_JAEGER_ENDPOINT"`
 	// Optional batching configuration (leave empty for defaults)
-	OtelBatchTimeout       int `mapstructure:"SERVER_APP_OTEL_BATCH_TIMEOUT"`         // Default: 5 seconds
-	OtelMaxExportBatchSize int `mapstructure:"SERVER_APP_OTEL_MAX_EXPORT_BATCH_SIZE"` // Default: 512
-	OtelMaxQueueSize       int `mapstructure:"SERVER_APP_OTEL_MAX_QUEUE_SIZE"`        // Default: 2048
-	OtelExportTimeout      int `mapstructure:"SERVER_APP_OTEL_EXPORT_TIMEOUT"`        // Default: 30 seconds
+	OtelBatchTimeout         int `mapstructure:"SERVER_APP_OTEL_BATCH_TIMEOUT"`          // Default: 5 seconds
+	OtelMaxExportBatchSize   int `mapstructure:"SERVER_APP_OTEL_MAX_EXPORT_BATCH_SIZE"`  // Default: 512
+	OtelMaxQueueSize         int `mapstructure:"SERVER_APP_OTEL_MAX_QUEUE_SIZE"`         // Default: 2048
+	OtelExportTimeout        int `mapstructure:"SERVER_APP_OTEL_EXPORT_TIMEOUT"`         // Default: 30 seconds
+	OtelMetricExportInterval int `mapstructure:"SERVER_APP_OTEL_METRIC_EXPORT_INTERVAL"` // Default: 10 seconds
 }
 
 func LoadConfig(path string) (*Conf, error) {
@@ -48,32 +49,33 @@ func LoadConfig(path string) (*Conf, error) {
 	}
 
 	cfg := &Conf{
-		AppName:                getEnv("SERVER_APP_NAME", "go_app_base"),
-		ImageName:              getEnv("SERVER_APP_IMAGE_NAME", ""),
-		ImageVersion:           getEnv("SERVER_APP_IMAGE_VERSION", ""),
-		Environment:            getEnv("SERVER_APP_ENVIRONMENT", "development"),
-		WebServerPort:          getEnv("SERVER_APP_WEB_SERVER_PORT", "8080"),
-		DBDriver:               getEnv("SERVER_APP_DB_DRIVER", "mysql"),
-		DBHost:                 getEnv("SERVER_APP_DB_HOST", "localhost"),
-		DBPort:                 getEnv("SERVER_APP_DB_PORT", "3316"),
-		DBUser:                 getEnv("SERVER_APP_DB_USER", "root"),
-		DBPassword:             getEnv("SERVER_APP_DB_PASSWORD", "root"),
-		DBName:                 getEnv("SERVER_APP_DB_NAME", "go_app_base"),
-		DBMaxOpenConnections:   getEnvAsInt("SERVER_APP_DB_MAX_OPEN_CONNECTIONS", 20),
-		DBMaxIdleConnections:   getEnvAsInt("SERVER_APP_DB_MAX_IDLE_CONNECTIONS", 10),
-		DBConnMaxLifetime:      getEnvAsInt("SERVER_APP_DB_CONN_MAX_LIFETIME", 1),
-		DBConnMaxIdleTime:      getEnvAsInt("SERVER_APP_DB_CONN_MAX_IDLE_TIME", 10),
-		DebugMode:              getEnvAsBool("SERVER_APP_DEBUG_MODE", false),
-		SwaggerEnabled:         getEnvAsBool("SERVER_APP_SWAGGER_ENABLED", false),
-		SwaggerUser:            getEnv("SERVER_APP_SWAGGER_USER", ""),
-		SwaggerPass:            getEnv("SERVER_APP_SWAGGER_PASS", ""),
-		OtelEnabled:            getEnvAsBool("SERVER_APP_OTEL_ENABLED", false),
-		OtelServiceName:        getEnv("SERVER_APP_OTEL_SERVICE_NAME", "go_app_base"),
-		JaegerEndpoint:         getEnv("SERVER_APP_JAEGER_ENDPOINT", "jaeger:4318"),
-		OtelBatchTimeout:       getEnvAsInt("SERVER_APP_OTEL_BATCH_TIMEOUT", 5),
-		OtelMaxExportBatchSize: getEnvAsInt("SERVER_APP_OTEL_MAX_EXPORT_BATCH_SIZE", 512),
-		OtelMaxQueueSize:       getEnvAsInt("SERVER_APP_OTEL_MAX_QUEUE_SIZE", 2048),
-		OtelExportTimeout:      getEnvAsInt("SERVER_APP_OTEL_EXPORT_TIMEOUT", 30),
+		AppName:                  getEnv("SERVER_APP_NAME", "go_app_base"),
+		ImageName:                getEnv("SERVER_APP_IMAGE_NAME", ""),
+		ImageVersion:             getEnv("SERVER_APP_IMAGE_VERSION", ""),
+		Environment:              getEnv("SERVER_APP_ENVIRONMENT", "development"),
+		WebServerPort:            getEnv("SERVER_APP_WEB_SERVER_PORT", "8080"),
+		DBDriver:                 getEnv("SERVER_APP_DB_DRIVER", "mysql"),
+		DBHost:                   getEnv("SERVER_APP_DB_HOST", "localhost"),
+		DBPort:                   getEnv("SERVER_APP_DB_PORT", "3316"),
+		DBUser:                   getEnv("SERVER_APP_DB_USER", "root"),
+		DBPassword:               getEnv("SERVER_APP_DB_PASSWORD", "root"),
+		DBName:                   getEnv("SERVER_APP_DB_NAME", "go_app_base"),
+		DBMaxOpenConnections:     getEnvAsInt("SERVER_APP_DB_MAX_OPEN_CONNECTIONS", 20),
+		DBMaxIdleConnections:     getEnvAsInt("SERVER_APP_DB_MAX_IDLE_CONNECTIONS", 10),
+		DBConnMaxLifetime:        getEnvAsInt("SERVER_APP_DB_CONN_MAX_LIFETIME", 1),
+		DBConnMaxIdleTime:        getEnvAsInt("SERVER_APP_DB_CONN_MAX_IDLE_TIME", 10),
+		DebugMode:                getEnvAsBool("SERVER_APP_DEBUG_MODE", false),
+		SwaggerEnabled:           getEnvAsBool("SERVER_APP_SWAGGER_ENABLED", false),
+		SwaggerUser:              getEnv("SERVER_APP_SWAGGER_USER", ""),
+		SwaggerPass:              getEnv("SERVER_APP_SWAGGER_PASS", ""),
+		OtelEnabled:              getEnvAsBool("SERVER_APP_OTEL_ENABLED", false),
+		OtelServiceName:          getEnv("SERVER_APP_OTEL_SERVICE_NAME", "go_app_base"),
+		JaegerEndpoint:           getEnv("SERVER_APP_JAEGER_ENDPOINT", "jaeger:4318"),
+		OtelBatchTimeout:         getEnvAsInt("SERVER_APP_OTEL_BATCH_TIMEOUT", 5),
+		OtelMaxExportBatchSize:   getEnvAsInt("SERVER_APP_OTEL_MAX_EXPORT_BATCH_SIZE", 512),
+		OtelMaxQueueSize:         getEnvAsInt("SERVER_APP_OTEL_MAX_QUEUE_SIZE", 2048),
+		OtelExportTimeout:        getEnvAsInt("SERVER_APP_OTEL_EXPORT_TIMEOUT", 30),
+		OtelMetricExportInterval: getEnvAsInt("SERVER_APP_OTEL_METRIC_EXPORT_INTERVAL", 10),
 	}
 
 	return cfg, nil
@@ -136,4 +138,12 @@ func (c *Conf) GetOtelMaxQueueSize() int {
 
 func (c *Conf) GetOtelExportTimeout() int {
 	return c.OtelExportTimeout
+}
+
+func (c *Conf) GetOtelMetricExportInterval() int {
+	return c.OtelMetricExportInterval
+}
+
+func (c *Conf) GetAppName() string {
+	return c.AppName
 }

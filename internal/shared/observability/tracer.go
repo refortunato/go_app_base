@@ -25,6 +25,7 @@ type ConfigProvider interface {
 	GetOtelMaxExportBatchSize() int
 	GetOtelMaxQueueSize() int
 	GetOtelExportTimeout() int
+	GetOtelMetricExportInterval() int
 }
 
 // TracerProvider wraps the OpenTelemetry tracer provider

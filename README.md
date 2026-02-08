@@ -181,14 +181,14 @@ make swagger
 
 ## Observability
 
-This project includes **OpenTelemetry** instrumentation for distributed tracing using **Jaeger**.
+This project includes **OpenTelemetry** instrumentation for distributed tracing and metrics using **OpenTelemetry Collector**, **Jaeger**, **Prometheus**, and **Grafana**.
 
 ### Quick Start
 
 **Start with observability**:
 ```sh
 make dev
-# Starts: MySQL + Application + Jaeger
+# Starts: MySQL + Application + OpenTelemetry Collector + Jaeger + Prometheus + Grafana
 ```
 
 **View traces**:
@@ -197,7 +197,19 @@ make jaeger-ui
 # Opens: http://localhost:16686
 ```
 
+**View metrics**:
+```sh
+# Prometheus
+open http://localhost:9090
+
+# Grafana (dashboards)
+open http://localhost:3000
+# Login: admin / admin
+```
+
 ### Features
+
+#### Distributed Tracing (Jaeger)
 
 ✅ **Auto-instrumentation**:
 - HTTP requests (Gin middleware)
@@ -210,21 +222,83 @@ make jaeger-ui
 
 ✅ **Context propagation** (W3C Trace Context)
 
+#### Metrics (Prometheus + Grafana)
+
+✅ **HTTP Metrics** (automatic):
+- Request count by endpoint, method, and status code
+- Request duration (latency histograms with P50, P95, P99)
+- Active requests (in-flight)
+- Request/Response size
+
+✅ **Custom Metrics**:
+- Counters, Gauges, Histograms, UpDownCounters
+- Dynamic metric prefix based on application name
+
+✅ **OpenTelemetry Collector**:
+- Central observability hub
+- Batching and retry logic
+- Exports traces to Jaeger
+- Exports metrics to Prometheus format
+
 ### Configuration
 
 ```env
+# Enable/disable observability
 SERVER_APP_OTEL_ENABLED=true
+
+# Service name for tracing and metrics
 SERVER_APP_OTEL_SERVICE_NAME=go_app_base
-SERVER_APP_JAEGER_ENDPOINT=jaeger:4318
+
+# Application name (used as metric prefix)
+# Example: "ms-registration" -> "ms_registration.http.server.request_count"
+SERVER_APP_NAME=go_app_base
+
+# OpenTelemetry Collector endpoint (receives traces + metrics)
+SERVER_APP_JAEGER_ENDPOINT=otel-collector:4318
+
+# Metric export interval (seconds)
+SERVER_APP_OTEL_METRIC_EXPORT_INTERVAL=10
 ```
 
-### Jaeger UI
+### Access UIs
 
+#### Jaeger (Traces)
 - **URL**: http://localhost:16686
 - **Service**: `go_app_base`
 - **Features**: Search traces, timeline view, span details, error tracking
 
-📖 **[Complete Observability Guide](./docs/implementation/observability-guide.md)**
+#### Prometheus (Metrics Query)
+- **URL**: http://localhost:9090
+- **Features**: PromQL queries, metric exploration, target monitoring
+- **Example Query**: `rate(go_app_base_http_server_request_count_total[1m])`
+
+#### Grafana (Dashboards)
+- **URL**: http://localhost:3000
+- **Credentials**: `admin` / `admin`
+- **Features**: Custom dashboards, alerting, visualization
+- **Datasource**: Pre-configured with Prometheus
+
+### Architecture
+
+```
+Application (8080)
+  ↓ OTLP HTTP (traces + metrics)
+OpenTelemetry Collector (4318)
+  ├─→ Jaeger (traces)
+  └─→ Prometheus format (metrics)
+       ↓ scrape
+     Prometheus (9090)
+       ↓ datasource
+     Grafana (3000)
+```
+
+### Documentation
+
+📖 **[Complete Observability Guide](./docs/implementation/observability-guide.md)** - Traces and metrics overview  
+📖 **[OpenTelemetry Collector Architecture](./docs/implementation/otel-collector-architecture.md)** - Detailed architecture  
+📖 **[Quick Start - Collector](./docs/OTEL_COLLECTOR_QUICKSTART.md)** - Quick setup and verification  
+📖 **[Dynamic Metrics Naming](./docs/implementation/dynamic-metrics-naming.md)** - Custom metric prefixes  
+📖 **[Metrics Troubleshooting](./docs/METRICS_TROUBLESHOOTING.md)** - Common issues and solutions
 
 ## API Endpoints
 ```http

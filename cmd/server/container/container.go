@@ -22,11 +22,12 @@ type Container struct {
 	// Shared infrastructure
 	Logger         logger.Logger
 	TracerProvider *observability.TracerProvider
+	MeterProvider  *observability.MeterProvider
 }
 
 // New creates and wires all application dependencies
 // This is the only place where dependencies are composed
-func New(db *sql.DB, cfg *configs.Conf, tracerProvider *observability.TracerProvider) (*Container, error) {
+func New(db *sql.DB, cfg *configs.Conf, tracerProvider *observability.TracerProvider, meterProvider *observability.MeterProvider) (*Container, error) {
 	// Logger
 	log := logger.NewSlogLogger(cfg.ImageName, cfg.ImageVersion)
 	logger.SetGlobalLogger(log)
@@ -49,5 +50,6 @@ func New(db *sql.DB, cfg *configs.Conf, tracerProvider *observability.TracerProv
 		SimpleModule:   simpleModule,
 		Logger:         log,
 		TracerProvider: tracerProvider,
+		MeterProvider:  meterProvider,
 	}, nil
 }

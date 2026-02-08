@@ -1,0 +1,98 @@
+# OpenTelemetry Collector Configuration
+# This collector acts as a central hub for observability data
+
+receivers:
+  # OTLP receiver accepts traces and metrics from the application
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "*"
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  # Batch processor groups data before sending to reduce overhead
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+  
+  # Memory limiter prevents OOM by dropping data when memory usage is high
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+  
+  # Resource processor adds custom attributes to all telemetry
+  resource:
+    attributes:
+      - key: service.namespace
+        value: go_app_base
+        action: insert
+      - key: deployment.environment
+        value: development
+        action: insert
+
+exporters:
+  # Export traces to Jaeger via OTLP
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 1000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+  
+  # Export metrics in Prometheus format
+  # Prometheus will scrape this endpoint
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: otel
+    const_labels:
+      cluster: go_app_base
+      environment: development
+    send_timestamps: true
+    metric_expiration: 5m
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  # Logging exporter for debugging (optional)
+  logging:
+    loglevel: info
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+service:
+  # Telemetry for the collector itself
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      level: detailed
+      address: 0.0.0.0:8888
+
+  # Data processing pipelines
+  pipelines:
+    # Traces pipeline: App → OTLP → Batch → Jaeger
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlp/jaeger, logging]
+    
+    # Metrics pipeline: App → OTLP → Batch → Prometheus format
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [prometheus, logging]
+
+  # Extensions provide additional capabilities
+  extensions: []

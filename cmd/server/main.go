@@ -64,8 +64,21 @@ func main() {
 		}
 	}()
 
+	// Initialize OpenTelemetry meter provider (non-blocking metrics)
+	meterProvider, err := observability.NewMeterProvider(cfg)
+	if err != nil {
+		log.Fatalf("Failed to initialize meter provider: %v", err)
+	}
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := meterProvider.Shutdown(ctx); err != nil {
+			log.Printf("Error shutting down meter provider: %v", err)
+		}
+	}()
+
 	// Initialize dependency container
-	c, err := container.New(db, cfg, tracerProvider)
+	c, err := container.New(db, cfg, tracerProvider, meterProvider)
 	if err != nil {
 		panic(err)
 	}
@@ -92,6 +105,7 @@ func main() {
 			cfg.WebServerPort,
 			infraWeb.RegisterRoutes(c),
 			cfg.OtelServiceName,
+			cfg.AppName,
 			cfg.OtelEnabled,
 		)
 

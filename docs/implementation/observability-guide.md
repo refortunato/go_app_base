@@ -1,14 +1,18 @@
 # Observability Guide - OpenTelemetry + Jaeger
 
-This guide explains how observability is implemented in this project using **OpenTelemetry** for instrumentation and **Jaeger** for distributed tracing visualization.
+This guide explains how observability is implemented in this project using **OpenTelemetry** for instrumentation and **Jaeger** for distributed tracing and metrics visualization.
 
 ## Table of Contents
 
 - [Architecture Overview](#architecture-overview)
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
-- [Auto-Instrumentation](#auto-instrumentation)
-- [Custom Instrumentation](#custom-instrumentation)
+- [Tracing](#tracing)
+  - [Auto-Instrumentation](#auto-instrumentation)
+  - [Custom Instrumentation](#custom-instrumentation)
+- [Metrics](#metrics)
+  - [Automatic HTTP Metrics](#automatic-http-metrics)
+  - [Custom Application Metrics](#custom-application-metrics)
 - [Accessing Jaeger UI](#accessing-jaeger-ui)
 - [Understanding Traces](#understanding-traces)
 - [Best Practices](#best-practices)
@@ -21,16 +25,19 @@ This guide explains how observability is implemented in this project using **Ope
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                       Application                            │
-│  ┌──────────────┐   ┌────────────┐   ┌──────────────┐      │
-│  │ HTTP Request │──▶│  Use Case  │──▶│  Repository  │      │
-│  │ (Gin)        │   │  (Domain)  │   │  (Database)  │      │
-│  └──────┬───────┘   └─────┬──────┘   └──────┬───────┘      │
-│         │                 │                  │               │
-│         │ Span 1          │ Span 2           │ Span 3        │
-│         ▼                 ▼                  ▼               │
+│                       Application                           │
+│  ┌──────────────┐   ┌────────────┐   ┌──────────────┐       │
+│  │ HTTP Request │──▶│  Use Case  │──▶│  Repository  │       │
+│  │ (Gin)        │   │  (Domain)  │   │  (Database)  │       │
+│  └──────┬───────┘   └─────┬──────┘   └──────┬───────┘       │
+│         │                 │                 │               │
+│    Traces + Metrics  Traces + Metrics   Traces + Metrics    │
+│         ▼                 ▼                 ▼               │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │       OpenTelemetry SDK (Tracer Provider)            │   │
+│  │       OpenTelemetry SDK (Non-Blocking Batching)      │   │
+│  │  ┌──────────────────┐  ┌──────────────────┐          │   │
+│  │  │ Tracer Provider  │  │  Meter Provider  │          │   │
+│  │  └──────────────────┘  └──────────────────┘          │   │
 │  └───────────────────────────┬──────────────────────────┘   │
 └──────────────────────────────┼──────────────────────────────┘
                                │
@@ -38,6 +45,7 @@ This guide explains how observability is implemented in this project using **Ope
                      ┌─────────────────────┐
                      │  Jaeger Collector   │
                      │  (OTLP HTTP: 4318)  │
+                     │  Traces + Metrics   │
                      └──────────┬──────────┘
                                 │
                                 ▼
@@ -50,15 +58,23 @@ This guide explains how observability is implemented in this project using **Ope
                      ┌─────────────────────┐
                      │    Jaeger UI        │
                      │  (Port 16686)       │
+                     │  Traces + Metrics   │
                      └─────────────────────┘
 ```
 
 **Key Components:**
 
-1. **OpenTelemetry SDK**: Instruments the application code
-2. **Tracer Provider**: Manages trace lifecycle and exporters
-3. **OTLP Exporter**: Sends traces to Jaeger via HTTP (port 4318)
-4. **Jaeger**: Collects, stores, and visualizes traces
+1. **OpenTelemetry SDK**: Instruments the application code (traces + metrics)
+2. **Tracer Provider**: Manages trace lifecycle and exporters (async batching)
+3. **Meter Provider**: Manages metrics collection and export (periodic, non-blocking)
+4. **OTLP Exporter**: Sends telemetry to Jaeger via HTTP (port 4318)
+5. **Jaeger**: Collects, stores, and visualizes traces and metrics
+
+**Performance Characteristics:**
+- **Traces**: Batch export every 5 seconds (configurable)
+- **Metrics**: Periodic export every 10 seconds (configurable)
+- **I/O Impact**: Zero blocking - all operations use background goroutines
+- **Memory**: Bounded by queue sizes (configurable)
 
 ---
 
@@ -78,14 +94,14 @@ This starts:
 ### 2. Generate Traffic
 
 ```bash
-# Health check (no tracing)
+# Health check (with tracing + metrics)
 curl http://localhost:8080/health
 
-# Example endpoint (with tracing)
+# Example endpoint (with tracing + metrics)
 curl http://localhost:8080/examples/550e8400-e29b-41d4-a716-446655440000
 ```
 
-### 3. View Traces
+### 3. View Traces and Metrics
 
 ```bash
 make jaeger-ui
@@ -251,6 +267,153 @@ func (controller *ExampleController) GetExample(c webcontext.WebContext) {
     // ...
 }
 ```
+
+---
+
+## Metrics
+
+### Automatic HTTP Metrics
+
+**Location**: [`internal/shared/observability/metrics_middleware.go`](../../internal/shared/observability/metrics_middleware.go)
+
+When `SERVER_APP_OTEL_ENABLED=true`, the following metrics are automatically collected for all HTTP requests:
+
+**Available Metrics:**
+
+1. **http.server.request.count** (Counter)
+   - Total number of HTTP requests
+   - Attributes: `http.method`, `http.route`, `http.status_code`
+
+2. **http.server.request.duration** (Histogram)
+   - HTTP request duration in milliseconds
+   - Attributes: `http.method`, `http.route`, `http.status_code`
+
+3. **http.server.active_requests** (UpDownCounter)
+   - Number of in-flight HTTP requests
+   - Attributes: `http.method`, `http.route`
+
+4. **http.server.request.size** (Histogram)
+   - HTTP request body size in bytes
+   - Attributes: `http.method`, `http.route`
+
+5. **http.server.response.size** (Histogram)
+   - HTTP response body size in bytes
+   - Attributes: `http.method`, `http.route`, `http.status_code`
+
+**Performance Characteristics:**
+- All operations are **non-blocking** (async aggregation)
+- Metrics are exported every **10 seconds** by default (configurable)
+- Zero I/O blocking on request path
+
+### Custom Application Metrics
+
+Add custom metrics to track business-specific operations.
+
+**Example**: Health Check with Counter
+
+```go
+import (
+    "context"
+    "github.com/refortunato/go_app_base/internal/shared/observability"
+    "go.opentelemetry.io/otel/attribute"
+    "go.opentelemetry.io/otel/metric"
+)
+
+type HealthCheckUseCase struct {
+    healthRepository repositories.HealthRepository
+    metrics          *observability.CustomMetrics
+    healthCounter    metric.Int64Counter
+}
+
+func NewHealthCheckUseCase(repo repositories.HealthRepository) *HealthCheckUseCase {
+    metrics := observability.NewCustomMetrics("health_module")
+    
+    // Create counter once (reuse across all calls)
+    healthCounter, _ := metrics.Counter(
+        "health.check.count",
+        "Total number of health checks performed",
+        "{check}",
+    )
+    
+    return &HealthCheckUseCase{
+        healthRepository: repo,
+        metrics:          metrics,
+        healthCounter:    healthCounter,
+    }
+}
+
+func (u *HealthCheckUseCase) Execute() (*HealthCheckOutputDTO, error) {
+    ctx := context.Background()
+    
+    err := u.healthRepository.CheckDatabaseConnection()
+    
+    // Record metric (non-blocking)
+    status := "success"
+    if err != nil {
+        status = "failure"
+    }
+    
+    u.healthCounter.Add(ctx, 1,
+        metric.WithAttributes(
+            attribute.String("status", status),
+        ),
+    )
+    
+    if err != nil {
+        return nil, err
+    }
+
+    return &HealthCheckOutputDTO{Status: "OK"}, nil
+}
+```
+
+**Metric Types Available:**
+
+1. **Counter** (monotonic increment only)
+   ```go
+   counter, _ := metrics.Counter("processed.count", "description", "{unit}")
+   counter.Add(ctx, 1)
+   ```
+
+2. **UpDownCounter** (can increment and decrement)
+   ```go
+   upDown, _ := metrics.UpDownCounter("active.connections", "description", "{connection}")
+   upDown.Add(ctx, 1)  // increment
+   upDown.Add(ctx, -1) // decrement
+   ```
+
+3. **Histogram** (distribution of values)
+   ```go
+   histogram, _ := metrics.Histogram("request.duration", "description", "ms")
+   histogram.Record(ctx, 123.45)
+   ```
+
+4. **Gauge** (asynchronous observation)
+   ```go
+   metrics.Gauge("cache.size", "description", "{item}",
+       func(ctx context.Context, observer metric.Int64Observer) error {
+           size := getSize() // Must be fast, uses cached value
+           observer.Observe(size)
+           return nil
+       },
+   )
+   ```
+
+**Configuration:**
+
+```env
+# Metric export interval in seconds (default: 10)
+SERVER_APP_OTEL_METRIC_EXPORT_INTERVAL=10
+
+# Export timeout (default: 30 seconds)
+SERVER_APP_OTEL_EXPORT_TIMEOUT=30
+```
+
+**Performance Tuning:**
+- High traffic: Increase interval to 30s
+- Low latency needs: Decrease to 5s
+
+For detailed examples, see [Metrics Guide](./metrics-guide.md) and [Metrics Examples](./metrics-examples.md).
 
 ---
 

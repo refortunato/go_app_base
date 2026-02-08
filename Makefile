@@ -16,7 +16,7 @@ help: ## Mostra esta mensagem de ajuda
 
 dev: ## Inicia ambiente de desenvolvimento
 	@echo "🚀 Iniciando ambiente de desenvolvimento..."
-	docker-compose up --build mysql jaeger app-dev
+	docker-compose up --build mysql jaeger prometheus grafana app-dev
 
 prod: ## Inicia ambiente de produção
 	@echo "🚀 Iniciando ambiente de produção..."
