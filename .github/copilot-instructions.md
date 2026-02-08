@@ -169,6 +169,28 @@ Use this map to decide where new code belongs. Prefer adding code in the correct
   - Always use the prefix `SERVER_APP_...`.
   - Update configuration mapping in `configs/config.go`.
 
+### Logger pattern
+- **All logger methods require `context.Context` as first parameter** for automatic trace correlation
+- **Controllers**: Extract context from `WebContext.GetContext()` and pass to all logger calls
+  ```go
+  ctx := webCtx.GetContext()
+  logger.Info(ctx, "Processing request", logger.CustomFields{...})
+  ```
+- **Use Cases**: Use the `ctx context.Context` parameter received from controller
+  ```go
+  func (uc *UseCase) Execute(ctx context.Context, input InputDTO) (OutputDTO, error) {
+      logger.Info(ctx, "Use case started", logger.CustomFields{...})
+  }
+  ```
+- **Initialization/Bootstrap**: Use `context.Background()` when no HTTP request context exists
+  ```go
+  ctx := context.Background()
+  logger.Info(ctx, "Application starting", logger.CustomFields{...})
+  ```
+- **Automatic fields**: `traceId` and `spanId` are automatically extracted from context via OpenTelemetry
+- **Never call logger without context** - the signature requires it
+- See detailed guide: `docs/implementation/logger-context-guide.md`
+
 ### Error handling
 - **All modules (both DDD and 4-tier) must use structured errors** via `ProblemDetails` (RFC 7807).
 - **Never use `fmt.Errorf` for business errors** - define specific errors in `errors/` package.

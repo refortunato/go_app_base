@@ -652,6 +652,7 @@ EOF
 package usecases
 
 import (
+	"context"
 EOF
     
     if [ "$HAS_TIME_FIELD" = true ]; then
@@ -660,6 +661,7 @@ EOF
     fi
     
     cat >> "$CREATE_UC_FILE" <<EOF
+
 	"${MODULE_PATH}/internal/${MODULE_NAME}/core/application/repositories"
 	"${MODULE_PATH}/internal/${MODULE_NAME}/core/domain/entities"
 )
@@ -689,7 +691,7 @@ func NewCreate${ENTITY_NAME_CAPITALIZED}UseCase(repo repositories.${ENTITY_NAME_
 	return &Create${ENTITY_NAME_CAPITALIZED}UseCase{repository: repo}
 }
 
-func (uc *Create${ENTITY_NAME_CAPITALIZED}UseCase) Execute(input Create${ENTITY_NAME_CAPITALIZED}InputDTO) (*Create${ENTITY_NAME_CAPITALIZED}OutputDTO, error) {
+func (uc *Create${ENTITY_NAME_CAPITALIZED}UseCase) Execute(ctx context.Context, input Create${ENTITY_NAME_CAPITALIZED}InputDTO) (*Create${ENTITY_NAME_CAPITALIZED}OutputDTO, error) {
 	entity, err := entities.New${ENTITY_NAME_CAPITALIZED}(
 EOF
     
@@ -720,6 +722,7 @@ EOF
 package usecases
 
 import (
+	"context"
 EOF
     
     if [ "$HAS_TIME_FIELD" = true ]; then
@@ -728,6 +731,7 @@ EOF
     fi
     
     cat >> "$GET_UC_FILE" <<EOF
+
 	"${MODULE_PATH}/internal/${MODULE_NAME}/core/application/repositories"
 )
 
@@ -759,7 +763,7 @@ func NewGet${ENTITY_NAME_CAPITALIZED}UseCase(repo repositories.${ENTITY_NAME_CAP
 	return &Get${ENTITY_NAME_CAPITALIZED}UseCase{repository: repo}
 }
 
-func (uc *Get${ENTITY_NAME_CAPITALIZED}UseCase) Execute(input Get${ENTITY_NAME_CAPITALIZED}InputDTO) (*Get${ENTITY_NAME_CAPITALIZED}OutputDTO, error) {
+func (uc *Get${ENTITY_NAME_CAPITALIZED}UseCase) Execute(ctx context.Context, input Get${ENTITY_NAME_CAPITALIZED}InputDTO) (*Get${ENTITY_NAME_CAPITALIZED}OutputDTO, error) {
 	entity, err := uc.repository.FindById(input.Id)
 	if err != nil {
 		return nil, err
@@ -792,6 +796,7 @@ EOF
 package usecases
 
 import (
+	"context"
 EOF
     
     if [ "$HAS_TIME_FIELD" = true ]; then
@@ -800,6 +805,7 @@ EOF
     fi
     
     cat >> "$LIST_UC_FILE" <<EOF
+
 	"${MODULE_PATH}/internal/${MODULE_NAME}/core/application/repositories"
 	"${MODULE_PATH}/internal/shared/dto"
 )
@@ -838,7 +844,7 @@ func NewList${ENTITY_NAME_CAPITALIZED}UseCase(repo repositories.${ENTITY_NAME_CA
 	return &List${ENTITY_NAME_CAPITALIZED}UseCase{repository: repo}
 }
 
-func (uc *List${ENTITY_NAME_CAPITALIZED}UseCase) Execute(input List${ENTITY_NAME_CAPITALIZED}InputDTO) (*List${ENTITY_NAME_CAPITALIZED}OutputDTO, error) {
+func (uc *List${ENTITY_NAME_CAPITALIZED}UseCase) Execute(ctx context.Context, input List${ENTITY_NAME_CAPITALIZED}InputDTO) (*List${ENTITY_NAME_CAPITALIZED}OutputDTO, error) {
 	// Calculate offset
 	offset := (input.Page - 1) * input.Limit
 
@@ -890,6 +896,7 @@ EOF
 package usecases
 
 import (
+	"context"
 EOF
     
     if [ "$HAS_TIME_FIELD" = true ]; then
@@ -898,6 +905,7 @@ EOF
     fi
     
     cat >> "$UPDATE_UC_FILE" <<EOF
+
 	"${MODULE_PATH}/internal/${MODULE_NAME}/core/application/repositories"
 )
 
@@ -927,7 +935,7 @@ func NewUpdate${ENTITY_NAME_CAPITALIZED}UseCase(repo repositories.${ENTITY_NAME_
 	return &Update${ENTITY_NAME_CAPITALIZED}UseCase{repository: repo}
 }
 
-func (uc *Update${ENTITY_NAME_CAPITALIZED}UseCase) Execute(input Update${ENTITY_NAME_CAPITALIZED}InputDTO) (*Update${ENTITY_NAME_CAPITALIZED}OutputDTO, error) {
+func (uc *Update${ENTITY_NAME_CAPITALIZED}UseCase) Execute(ctx context.Context, input Update${ENTITY_NAME_CAPITALIZED}InputDTO) (*Update${ENTITY_NAME_CAPITALIZED}OutputDTO, error) {
 	entity, err := uc.repository.FindById(input.Id)
 	if err != nil {
 		return nil, err
@@ -961,6 +969,8 @@ EOF
 package usecases
 
 import (
+	"context"
+
 	"${MODULE_PATH}/internal/${MODULE_NAME}/core/application/repositories"
 )
 
@@ -980,7 +990,7 @@ func NewDelete${ENTITY_NAME_CAPITALIZED}UseCase(repo repositories.${ENTITY_NAME_
 	return &Delete${ENTITY_NAME_CAPITALIZED}UseCase{repository: repo}
 }
 
-func (uc *Delete${ENTITY_NAME_CAPITALIZED}UseCase) Execute(input Delete${ENTITY_NAME_CAPITALIZED}InputDTO) (*Delete${ENTITY_NAME_CAPITALIZED}OutputDTO, error) {
+func (uc *Delete${ENTITY_NAME_CAPITALIZED}UseCase) Execute(ctx context.Context, input Delete${ENTITY_NAME_CAPITALIZED}InputDTO) (*Delete${ENTITY_NAME_CAPITALIZED}OutputDTO, error) {
 	if err := uc.repository.Delete(input.Id); err != nil {
 		return nil, err
 	}
@@ -1043,13 +1053,14 @@ func New${ENTITY_NAME_CAPITALIZED}Controller(
 // @Failure      500    {object}  errors.ProblemDetails  "Internal server error"
 // @Router       /${ENTITY_NAME_LOWER}s [post]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Create(ctx context.WebContext) {
+	webCtx := ctx.GetContext()
 	var request usecases.Create${ENTITY_NAME_CAPITALIZED}InputDTO
 	if err := ctx.BindJSON(&request); err != nil {
 		advisor.ReturnBadRequestError(ctx, err)
 		return
 	}
 
-	output, err := c.createUseCase.Execute(request)
+	output, err := c.createUseCase.Execute(webCtx, request)
 	if err != nil {
 		advisor.ReturnApplicationError(ctx, err)
 		return
@@ -1070,9 +1081,10 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) Create(ctx context.WebContext) {
 // @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
 // @Router       /${ENTITY_NAME_LOWER}s/{id} [get]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Get(ctx context.WebContext) {
+	webCtx := ctx.GetContext()
 	id := ctx.Param("id")
 	
-	output, err := c.getUseCase.Execute(usecases.Get${ENTITY_NAME_CAPITALIZED}InputDTO{Id: id})
+	output, err := c.getUseCase.Execute(webCtx, usecases.Get${ENTITY_NAME_CAPITALIZED}InputDTO{Id: id})
 	if err != nil {
 		advisor.ReturnApplicationError(ctx, err)
 		return
@@ -1099,6 +1111,7 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) Get(ctx context.WebContext) {
 // @Failure      500    {object}  errors.ProblemDetails  "Internal server error"
 // @Router       /${ENTITY_NAME_LOWER}s [get]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) List(ctx context.WebContext) {
+	webCtx := ctx.GetContext()
 	pageStr := ctx.Query("page")
 	limitStr := ctx.Query("limit")
 
@@ -1108,7 +1121,7 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) List(ctx context.WebContext) {
 		return
 	}
 
-	output, err := c.listUseCase.Execute(usecases.List${ENTITY_NAME_CAPITALIZED}InputDTO{
+	output, err := c.listUseCase.Execute(webCtx, usecases.List${ENTITY_NAME_CAPITALIZED}InputDTO{
 		Page:  pagination.Page,
 		Limit: pagination.Limit,
 	})
@@ -1134,6 +1147,7 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) List(ctx context.WebContext) {
 // @Failure      500    {object}  errors.ProblemDetails  "Internal server error"
 // @Router       /${ENTITY_NAME_LOWER}s/{id} [put]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Update(ctx context.WebContext) {
+	webCtx := ctx.GetContext()
 	id := ctx.Param("id")
 	
 	var request usecases.Update${ENTITY_NAME_CAPITALIZED}InputDTO
@@ -1143,7 +1157,7 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) Update(ctx context.WebContext) {
 	}
 	request.Id = id
 
-	output, err := c.updateUseCase.Execute(request)
+	output, err := c.updateUseCase.Execute(webCtx, request)
 	if err != nil {
 		advisor.ReturnApplicationError(ctx, err)
 		return
@@ -1169,9 +1183,10 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) Update(ctx context.WebContext) {
 // @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
 // @Router       /${ENTITY_NAME_LOWER}s/{id} [delete]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Delete(ctx context.WebContext) {
+	webCtx := ctx.GetContext()
 	id := ctx.Param("id")
 
-	output, err := c.deleteUseCase.Execute(usecases.Delete${ENTITY_NAME_CAPITALIZED}InputDTO{Id: id})
+	output, err := c.deleteUseCase.Execute(webCtx, usecases.Delete${ENTITY_NAME_CAPITALIZED}InputDTO{Id: id})
 	if err != nil {
 		advisor.ReturnApplicationError(ctx, err)
 		return
@@ -1553,6 +1568,7 @@ EOF
 package services
 
 import (
+	"context"
 	"time"
 
 	"${MODULE_PATH}/internal/shared"
@@ -1570,7 +1586,7 @@ func New${ENTITY_NAME_CAPITALIZED}Service(repo *repositories.${ENTITY_NAME_CAPIT
 	return &${ENTITY_NAME_CAPITALIZED}Service{repository: repo}
 }
 
-func (s *${ENTITY_NAME_CAPITALIZED}Service) Get${ENTITY_NAME_CAPITALIZED}(id string) (*models.${ENTITY_NAME_CAPITALIZED}, error) {
+func (s *${ENTITY_NAME_CAPITALIZED}Service) Get${ENTITY_NAME_CAPITALIZED}(ctx context.Context, id string) (*models.${ENTITY_NAME_CAPITALIZED}, error) {
 	if id == "" {
 		return nil, errors.Err${ENTITY_NAME_CAPITALIZED}IdRequired
 	}
@@ -1592,7 +1608,7 @@ type List${ENTITY_NAME_CAPITALIZED}Response struct {
 	Pagination *dto.PaginationResponseDTO \`json:"pagination"\`
 }
 
-func (s *${ENTITY_NAME_CAPITALIZED}Service) List${ENTITY_NAME_CAPITALIZED}s(page, limit int) (*List${ENTITY_NAME_CAPITALIZED}Response, error) {
+func (s *${ENTITY_NAME_CAPITALIZED}Service) List${ENTITY_NAME_CAPITALIZED}s(ctx context.Context, page, limit int) (*List${ENTITY_NAME_CAPITALIZED}Response, error) {
 	// Calculate offset
 	offset := (page - 1) * limit
 
@@ -1618,6 +1634,7 @@ func (s *${ENTITY_NAME_CAPITALIZED}Service) List${ENTITY_NAME_CAPITALIZED}s(page
 }
 
 func (s *${ENTITY_NAME_CAPITALIZED}Service) Create${ENTITY_NAME_CAPITALIZED}(
+	ctx context.Context,
 EOF
     
     for field in "${FIELDS[@]}"; do
@@ -1654,6 +1671,7 @@ EOF
 }
 
 func (s *${ENTITY_NAME_CAPITALIZED}Service) Update${ENTITY_NAME_CAPITALIZED}(
+	ctx context.Context,
 	id string,
 EOF
     
@@ -1697,7 +1715,7 @@ EOF
 	return existing, nil
 }
 
-func (s *${ENTITY_NAME_CAPITALIZED}Service) Delete${ENTITY_NAME_CAPITALIZED}(id string) error {
+func (s *${ENTITY_NAME_CAPITALIZED}Service) Delete${ENTITY_NAME_CAPITALIZED}(ctx context.Context, id string) error {
 	if id == "" {
 		return errors.Err${ENTITY_NAME_CAPITALIZED}IdRequired
 	}
@@ -1748,9 +1766,10 @@ func New${ENTITY_NAME_CAPITALIZED}Controller(service *services.${ENTITY_NAME_CAP
 // @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
 // @Router       /${ENTITY_NAME_LOWER}s/{id} [get]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Get(ctx context.WebContext) {
+	webCtx := ctx.GetContext()
 	id := ctx.Param("id")
 
-	entity, err := c.service.Get${ENTITY_NAME_CAPITALIZED}(id)
+	entity, err := c.service.Get${ENTITY_NAME_CAPITALIZED}(webCtx, id)
 	if err != nil {
 		advisor.ReturnApplicationError(ctx, err)
 		return
@@ -1772,6 +1791,7 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) Get(ctx context.WebContext) {
 // @Failure      500    {object}  errors.ProblemDetails  "Internal server error"
 // @Router       /${ENTITY_NAME_LOWER}s [get]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) List(ctx context.WebContext) {
+	webCtx := ctx.GetContext()
 	pageStr := ctx.Query("page")
 	limitStr := ctx.Query("limit")
 
@@ -1781,7 +1801,7 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) List(ctx context.WebContext) {
 		return
 	}
 
-	result, err := c.service.List${ENTITY_NAME_CAPITALIZED}s(pagination.Page, pagination.Limit)
+	result, err := c.service.List${ENTITY_NAME_CAPITALIZED}s(webCtx, pagination.Page, pagination.Limit)
 	if err != nil {
 		advisor.ReturnApplicationError(ctx, err)
 		return
@@ -1801,6 +1821,7 @@ func (c *${ENTITY_NAME_CAPITALIZED}Controller) List(ctx context.WebContext) {
 // @Failure      500    {object}  errors.ProblemDetails  "Internal server error"
 // @Router       /${ENTITY_NAME_LOWER}s [post]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Create(ctx context.WebContext) {
+	webCtx := ctx.GetContext()
 	var request struct {
 EOF
     
@@ -1820,6 +1841,7 @@ EOF
 	}
 
 	entity, err := c.service.Create${ENTITY_NAME_CAPITALIZED}(
+		webCtx,
 EOF
     
     for field in "${FIELDS[@]}"; do
@@ -1850,6 +1872,7 @@ EOF
 // @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
 // @Router       /${ENTITY_NAME_LOWER}s/{id} [put]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Update(ctx context.WebContext) {
+	webCtx := ctx.GetContext()
 	id := ctx.Param("id")
 
 	var request struct {
@@ -1871,6 +1894,7 @@ EOF
 	}
 
 	entity, err := c.service.Update${ENTITY_NAME_CAPITALIZED}(
+		webCtx,
 		id,
 EOF
     
@@ -1901,9 +1925,10 @@ EOF
 // @Failure      500  {object}  errors.ProblemDetails  "Internal server error"
 // @Router       /${ENTITY_NAME_LOWER}s/{id} [delete]
 func (c *${ENTITY_NAME_CAPITALIZED}Controller) Delete(ctx context.WebContext) {
+	webCtx := ctx.GetContext()
 	id := ctx.Param("id")
 
-	if err := c.service.Delete${ENTITY_NAME_CAPITALIZED}(id); err != nil {
+	if err := c.service.Delete${ENTITY_NAME_CAPITALIZED}(webCtx, id); err != nil {
 		advisor.ReturnApplicationError(ctx, err)
 		return
 	}

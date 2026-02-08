@@ -1,21 +1,25 @@
 package logger
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 // Logger interface for structured logging across the application.
-// All log methods accept a message and optional custom fields.
+// All log methods accept a context as the first parameter for trace propagation,
+// followed by a message and optional custom fields.
 type Logger interface {
 	// Debug logs a debug-level message with optional custom fields
-	Debug(message string, customFields ...CustomFields)
+	Debug(ctx context.Context, message string, customFields ...CustomFields)
 
 	// Info logs an info-level message with optional custom fields
-	Info(message string, customFields ...CustomFields)
+	Info(ctx context.Context, message string, customFields ...CustomFields)
 
 	// Warn logs a warning-level message with optional custom fields
-	Warn(message string, customFields ...CustomFields)
+	Warn(ctx context.Context, message string, customFields ...CustomFields)
 
 	// Error logs an error-level message with optional custom fields
-	Error(message string, customFields ...CustomFields)
+	Error(ctx context.Context, message string, customFields ...CustomFields)
 
 	// With creates a new logger instance with additional context fields
 	// that will be included in all subsequent log entries
@@ -52,23 +56,23 @@ func getLogger() Logger {
 }
 
 // Debug logs a debug-level message using the global logger.
-func Debug(message string, customFields ...CustomFields) {
-	getLogger().Debug(message, customFields...)
+func Debug(ctx context.Context, message string, customFields ...CustomFields) {
+	getLogger().Debug(ctx, message, customFields...)
 }
 
 // Info logs an info-level message using the global logger.
-func Info(message string, customFields ...CustomFields) {
-	getLogger().Info(message, customFields...)
+func Info(ctx context.Context, message string, customFields ...CustomFields) {
+	getLogger().Info(ctx, message, customFields...)
 }
 
 // Warn logs a warning-level message using the global logger.
-func Warn(message string, customFields ...CustomFields) {
-	getLogger().Warn(message, customFields...)
+func Warn(ctx context.Context, message string, customFields ...CustomFields) {
+	getLogger().Warn(ctx, message, customFields...)
 }
 
 // Error logs an error-level message using the global logger.
-func Error(message string, customFields ...CustomFields) {
-	getLogger().Error(message, customFields...)
+func Error(ctx context.Context, message string, customFields ...CustomFields) {
+	getLogger().Error(ctx, message, customFields...)
 }
 
 // With creates a new logger instance with additional context fields.

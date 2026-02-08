@@ -47,23 +47,23 @@ func NewSlogLogger(imageName, imageVersion string) Logger {
 }
 
 // Debug logs a debug-level message
-func (l *SlogLogger) Debug(message string, customFields ...CustomFields) {
-	l.log(slog.LevelDebug, message, customFields...)
+func (l *SlogLogger) Debug(ctx context.Context, message string, customFields ...CustomFields) {
+	l.log(ctx, slog.LevelDebug, message, customFields...)
 }
 
 // Info logs an info-level message
-func (l *SlogLogger) Info(message string, customFields ...CustomFields) {
-	l.log(slog.LevelInfo, message, customFields...)
+func (l *SlogLogger) Info(ctx context.Context, message string, customFields ...CustomFields) {
+	l.log(ctx, slog.LevelInfo, message, customFields...)
 }
 
 // Warn logs a warning-level message
-func (l *SlogLogger) Warn(message string, customFields ...CustomFields) {
-	l.log(slog.LevelWarn, message, customFields...)
+func (l *SlogLogger) Warn(ctx context.Context, message string, customFields ...CustomFields) {
+	l.log(ctx, slog.LevelWarn, message, customFields...)
 }
 
 // Error logs an error-level message
-func (l *SlogLogger) Error(message string, customFields ...CustomFields) {
-	l.log(slog.LevelError, message, customFields...)
+func (l *SlogLogger) Error(ctx context.Context, message string, customFields ...CustomFields) {
+	l.log(ctx, slog.LevelError, message, customFields...)
 }
 
 // With creates a new logger instance with additional context fields
@@ -87,8 +87,9 @@ func (l *SlogLogger) With(fields CustomFields) Logger {
 }
 
 // log is the internal method that performs the actual logging
-func (l *SlogLogger) log(level slog.Level, message string, customFields ...CustomFields) {
-	ctx := context.Background()
+func (l *SlogLogger) log(ctx context.Context, level slog.Level, message string, customFields ...CustomFields) {
+	// Extract trace information from context
+	contextFields := ExtractCustomContextFields(ctx)
 
 	// Build the list of attributes
 	attrs := []any{}
@@ -97,11 +98,20 @@ func (l *SlogLogger) log(level slog.Level, message string, customFields ...Custo
 	attrs = append(attrs, slog.String("imageName", l.imageName))
 	attrs = append(attrs, slog.String("imageVersion", l.imageVer))
 
-	// Merge contextData with custom fields
+	// Merge: contextData (from With) + contextFields (traceId/spanId) + customFields
 	mergedCustom := make(CustomFields)
+
+	// 1. Add persistent context fields (from With())
 	for k, v := range l.contextData {
 		mergedCustom[k] = v
 	}
+
+	// 2. Add context fields extracted from context (traceId, spanId, etc.)
+	for k, v := range contextFields {
+		mergedCustom[k] = v
+	}
+
+	// 3. Add custom fields passed to this specific log call (can override)
 	for _, cf := range customFields {
 		for k, v := range cf {
 			mergedCustom[k] = v
@@ -117,6 +127,6 @@ func (l *SlogLogger) log(level slog.Level, message string, customFields ...Custo
 		attrs = append(attrs, slog.Group("custom", customAttrs...))
 	}
 
-	// Log with the appropriate level
+	// Log with the appropriate level (pass context to slog)
 	l.logger.Log(ctx, level, message, attrs...)
 }

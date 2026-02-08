@@ -1,6 +1,7 @@
 package container
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/refortunato/go_app_base/configs"
@@ -31,12 +32,15 @@ func New(db *sql.DB, cfg *configs.Conf, tracerProvider *observability.TracerProv
 	// Logger
 	log := logger.NewSlogLogger(cfg.ImageName, cfg.ImageVersion)
 	logger.SetGlobalLogger(log)
-	logger.Info("Logger initialized successfully")
+
+	// Use context.Background() for initialization logs (no HTTP request context)
+	ctx := context.Background()
+	logger.Info(ctx, "Logger initialized successfully")
 
 	// Database tracing is handled at repository level via observability.TraceQuery/TraceExec helpers
 	// See internal/shared/observability/db_helpers.go for implementation
 	if cfg.OtelEnabled {
-		logger.Info("Database tracing enabled (via repository helpers)")
+		logger.Info(ctx, "Database tracing enabled (via repository helpers)")
 	}
 
 	// Initialize modules (each module wires its own dependencies)

@@ -32,9 +32,10 @@ func NewExampleController(getExampleUseCase usecases.GetExampleUseCase) *Example
 // @Router       /examples/{id} [get]
 func (controller *ExampleController) GetExample(c webcontext.WebContext) {
 	id := c.Param("id")
+	ctx := c.GetContext()
 
 	// Log the incoming request with custom fields
-	logger.Info("Processing GetExample request", logger.CustomFields{
+	logger.Info(ctx, "Processing GetExample request", logger.CustomFields{
 		"exampleId": id,
 		"endpoint":  "GET /examples/:id",
 	})
@@ -44,11 +45,10 @@ func (controller *ExampleController) GetExample(c webcontext.WebContext) {
 	}
 
 	// Pass context from request for trace propagation
-	ctx := c.GetContext()
 	output, err := controller.GetExampleUseCase.Execute(ctx, input)
 	if err != nil {
 		// Log error with custom context
-		logger.Error("Failed to get example", logger.CustomFields{
+		logger.Error(ctx, "Failed to get example", logger.CustomFields{
 			"exampleId": id,
 			"error":     err.Error(),
 		})
@@ -57,7 +57,7 @@ func (controller *ExampleController) GetExample(c webcontext.WebContext) {
 	}
 
 	// Log successful response
-	logger.Info("Example retrieved successfully", logger.CustomFields{
+	logger.Info(ctx, "Example retrieved successfully", logger.CustomFields{
 		"exampleId": id,
 	})
 
